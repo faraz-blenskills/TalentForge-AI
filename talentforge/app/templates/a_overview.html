@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Admin - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Admin overview</h1></div>
+<div class="grid g4">
+  <div class="card"><div class="muted small">Users</div><div class="stat">{{ counts.users }}</div></div>
+  <div class="card"><div class="muted small">Jobs</div><div class="stat">{{ counts.jobs }}</div></div>
+  <div class="card"><div class="muted small">Applications</div><div class="stat">{{ counts.apps }}</div></div>
+  <div class="card"><div class="muted small">Human decisions / AI results</div><div class="stat">{{ counts.decisions }} / {{ counts.ai }}</div></div>
+</div>
+<h2 style="margin-top:24px">Users</h2>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Created</th></tr></thead>
+  <tbody>{% for u in users %}<tr><td>{{ u.id }}</td><td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ u.role }}</td><td class="small">{{ u.created_at }}</td></tr>{% endfor %}</tbody></table></div>
+<h2 style="margin-top:24px">Jobs</h2>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>Title</th><th>Company</th><th>Status</th><th>Applicants</th></tr></thead>
+  <tbody>{% for j in jobs %}<tr><td>{{ j.id }}</td><td>{{ j.title }}</td><td>{{ j.org_name }}</td><td>{{ j.status }}</td><td>{{ j.n_apps }}</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

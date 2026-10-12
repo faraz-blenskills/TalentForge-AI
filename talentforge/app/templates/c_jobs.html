@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% import "_m.html" as ui %}
+{% block title %}Jobs - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Jobs matched to you</h1><p class="muted">Ranked by how well your profile fits. Open a job to see why.</p></div></div>
+<form method="get" class="card tight row" style="margin-bottom:18px">
+  <div class="grow"><input type="text" name="q" value="{{ q.get('q','') }}" placeholder="Search title or description"></div>
+  <div class="grow"><input type="text" name="loc" value="{{ q.get('loc','') }}" placeholder="Location"></div>
+  <button class="btn" type="submit">Filter</button>
+</form>
+<div class="grid">
+{% for c in cards %}
+  <div class="card">
+    <div class="row" style="gap:18px;align-items:flex-start">
+      {{ ui.ring(c.m.score, 'sm') }}
+      <div class="grow">
+        <h3><a href="/candidate/jobs/{{ c.job.id }}">{{ c.job.title }}</a></h3>
+        <div class="muted small">{{ c.job.org_name }} &middot; {{ c.job.location or 'Location not set' }} &middot; {{ c.job.job_type }}</div>
+        <div style="margin-top:8px">
+          {% for i in c.m.matched[:4] %}<span class="tag ok">{{ i.skill }}</span>{% endfor %}
+          {% for i in c.m.missing[:3] %}<span class="tag miss">{{ i.skill }}</span>{% endfor %}
+        </div>
+      </div>
+      <div>{% if c.applied %}<span class="tag neutral">Applied</span>{% else %}<a class="btn small" href="/candidate/jobs/{{ c.job.id }}">View</a>{% endif %}</div>
+    </div>
+  </div>
+{% else %}<div class="card"><p class="muted">No open jobs match these filters.</p></div>{% endfor %}
+</div>
+{% endblock %}

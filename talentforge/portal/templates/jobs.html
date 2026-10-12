@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Jobs - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head"><div class="grow"><p class="eyebrow">Jobs</p><h1>Job agents and matches</h1>
+  <p class="muted">{{ counts.total_matches }} match{{ 'es' if counts.total_matches != 1 }} found &middot; {{ counts.new_matches }} new</p></div>
+  <a class="btn" href="/jobs/agents/new">+ Create job agent</a></div>
+
+<div class="tabs glass-pill">
+  <a class="{{ 'active' if tab != 'matches' }}" href="/jobs?tab=agents">Agents</a>
+  <a class="{{ 'active' if tab == 'matches' }}" href="/jobs?tab=matches">All matches</a>
+</div>
+
+{% if not has_resume %}
+<div class="flash warn">Add a resume first so agents can score postings against it. <a href="/resumes"><b>Go to resumes</b></a></div>
+{% endif %}
+
+{% if tab == 'matches' %}
+  <form class="card tight row" method="get" style="margin-bottom:18px">
+    <input type="hidden" name="tab" value="matches">
+    <select name="status" style="max-width:190px">
+      <option value="">Any status</option>
+      {% for s in ['new','seen','saved','applied'] %}<option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>{% endfor %}
+    </select>
+    <input type="number" name="min" min="0" max="100" value="{{ min_score|int }}" style="max-width:130px" aria-label="Minimum match score" placeholder="Min score">
+    <button class="btn sm" type="submit">Filter</button>
+  </form>
+  <div class="card">
+    {% for j in results %}
+    <div class="list-row">
+      {{ ui.ring(j.match_score, 'xs') }}
+      <div class="grow">
+        <h3 class="clip"><a href="/jobs/{{ j.id }}" style="text-decoration:none">{{ j.title }}</a></h3>
+        <div class="muted small clip">{{ j.company }} &middot; {{ j.location or 'Location not set' }} &middot; via {{ j.via or j.source }}{% if j.posted_at %} &middot; {{ j.posted_at }}{% endif %}</div>
+        <div>{% for s in j.match.get('matched', [])[:4] %}<span class="tag ok">{{ s }}</span>{% endfor %}
+          {% for s in j.match.get('missing', [])[:3] %}<span class="tag miss">{{ s }}</span>{% endfor %}</div>
+      </div>
+      <span class="tag {{ 'accent' if j.status == 'new' else '' }}">{{ j.status }}</span>
+      <a class="btn sm ghost" href="/jobs/{{ j.id }}">View</a>
+    </div>
+    {% else %}<p class="muted">No matches yet. Create an agent or run an existing one.</p>{% endfor %}
+  </div>
+{% else %}
+  <div class="grid g2">
+    {% for a in agents %}
+    <div class="card">
+      <div class="row top">
+        <div class="grow"><h3 class="clip"><a href="/jobs/agents/{{ a.id }}" style="text-decoration:none">{{ a.name }}</a></h3>
+          <div class="muted small clip">"{{ a.query }}" &middot; {{ a.level }} level{% if a.locations %} &middot; {{ a.locations|join(', ') }}{% endif %}</div></div>
+        <span class="tag {{ 'ok' if a.active else '' }}">{{ 'Working for you' if a.active else 'Paused' }}</span>
+      </div>
+      <div class="row" style="gap:24px;margin:16px 0">
+        <div><div style="font-size:1.8rem;font-weight:500">{{ a.stats.total }}</div><div class="muted small">Found</div></div>
+        <div><div style="font-size:1.8rem;font-weight:500">{{ a.stats.unseen }}</div><div class="muted small">New</div></div>
+        <div><div style="font-size:1.8rem;font-weight:500">{{ a.stats.applied }}</div><div class="muted small">Applied</div></div>
+      </div>
+      <div class="muted tiny">{{ ('Last run ' ~ (a.last_run_at|dt)) if a.last_run_at else 'Not run yet' }}</div>
+      <div class="row" style="margin-top:12px">
+        <a class="btn sm" href="/jobs/agents/{{ a.id }}">Open</a>
+        <form class="inline" method="post" action="/jobs/agents/{{ a.id }}/run"><button class="btn ghost sm">Run now</button></form>
+        <form class="inline" method="post" action="/jobs/agents/{{ a.id }}/toggle"><button class="btn ghost sm">{{ 'Pause' if a.active else 'Resume' }}</button></form>
+        <a class="btn ghost sm" href="/jobs/agents/{{ a.id }}/edit">Edit</a>
+      </div>
+    </div>
+    {% else %}
+    <div class="card dark" style="grid-column: 1 / -1">
+      <p class="eyebrow" style="color:rgba(243,240,238,.7)">No agents yet</p>
+      <h2>Create your first job agent</h2>
+      <p class="muted">Describe the role you want. The agent expands the search, checks several job sources, removes duplicates and ranks what it finds against your resume.</p>
+      <a class="btn accent" href="/jobs/agents/new">Create job agent</a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <p class="eyebrow">Job sources</p>
+    <div class="grid g2" style="margin-top:8px">
+      {% for s in sources %}
+      <div class="list-row" style="border:0;padding:6px 0">
+        <span class="tag {{ 'ok' if s.available else 'warn' }}">{{ 'ready' if s.available else 'needs key' }}</span>
+        <div class="grow"><b>{{ s.label }}</b><div class="muted small">{{ s.coverage }}</div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

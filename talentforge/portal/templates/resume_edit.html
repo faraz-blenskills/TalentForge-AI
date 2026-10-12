@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Edit {{ r.title }} - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head">
+  <div class="grow"><p class="eyebrow"><a href="/resumes/{{ r.id }}" style="text-decoration:none">&larr; Back to resume</a></p><h1>Resume builder</h1></div>
+  <a class="btn ghost" href="/resumes/{{ r.id }}/tailor">Tailor to a job</a>
+</div>
+<div class="grid g-edit">
+  <div>
+    <div class="card tight savebar">
+      <input id="rtitle" type="text" value="{{ r.title }}" aria-label="Resume name" style="max-width:260px">
+      <select id="rtemplate" aria-label="Template" style="max-width:150px">
+        <option value="classic" {{ 'selected' if r.template == 'classic' }}>Classic</option>
+        <option value="modern" {{ 'selected' if r.template == 'modern' }}>Modern</option>
+      </select>
+      <span id="savestate" class="muted small grow">All changes saved</span>
+      <button id="savebtn" class="btn sm" type="button">Save</button>
+    </div>
+    <div id="builder"></div>
+  </div>
+  <div class="sticky stack">
+    <div class="card tight">
+      <div class="row" style="gap:16px">
+        <div id="scorering">{{ ui.ring(r.score, 'sm') }}</div>
+        <div class="grow"><b id="scoregrade">{{ s.grade }}</b><div class="muted small">Live resume score</div></div>
+      </div>
+      <div id="fixes" style="margin-top:8px"></div>
+    </div>
+    <div id="preview"></div>
+  </div>
+</div>
+<script id="resume-data" type="application/json">{{ d|tojson }}</script>
+<script id="resume-meta" type="application/json">{{ {'id': r.id, 'score': r.score, 'fixes': s.top_fixes, 'grade': s.grade}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="/static/builder.js"></script>{% endblock %}

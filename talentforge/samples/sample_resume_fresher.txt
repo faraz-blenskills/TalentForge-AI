@@ -1,0 +1,29 @@
+Riya Deshmukh
+Aspiring Backend Developer
+riya.deshmukh@demo.example | +91 98765 43210 | Pune, India
+github.com/riya-demo | linkedin.com/in/riya-demo
+
+SUMMARY
+Final-year computer engineering student who enjoys building small web services.
+
+EDUCATION
+B.Tech in Computer Science and Engineering, Lakeview Institute of Technology, 2026
+
+SKILLS
+Python, Flask, SQL, MySQL, Git, HTML, CSS, JavaScript, REST API
+
+PROJECTS
+Library Management API
+- Responsible for building a Flask REST API with MySQL for 3 user roles
+- Worked on authentication and role based access
+Weather Dashboard
+- Created a JavaScript dashboard that consumes a public API
+- Helped test and deploy the app
+
+EXPERIENCE
+Python Intern, Brightpath Labs, Jun 2025 - Aug 2025
+- Worked on internal scripts that clean CSV data
+- Assisted in writing unit tests
+
+CERTIFICATIONS
+Python for Everybody (online course)

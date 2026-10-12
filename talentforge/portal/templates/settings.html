@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Settings - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head"><div class="grow"><p class="eyebrow">Account</p><h1>Settings</h1></div></div>
+<div class="grid g2">
+  <div class="card">
+    <h3>Job sources</h3>
+    <p class="muted small">Sources marked "needs key" activate when the server has the matching environment variable.</p>
+    {% for s in sources %}
+    <div class="list-row"><span class="tag {{ 'ok' if s.available else 'warn' }}">{{ 'ready' if s.available else 'needs key' }}</span>
+      <div class="grow"><b>{{ s.label }}</b><div class="muted small">{{ s.coverage }}</div></div></div>
+    {% endfor %}
+    <p class="hint">AI wording: {{ 'enabled (Claude)' if llm_on else 'off - set ANTHROPIC_API_KEY to enable' }}</p>
+  </div>
+  <div class="card">
+    <h3>Privacy</h3>
+    <p class="muted small">Your resumes and job matches are stored only in this application's database. Delete removes your account, resumes, agents and matches permanently.</p>
+    <form method="post" action="/settings/delete">
+      <label for="confirm">Type DELETE to confirm</label><input id="confirm" type="text" name="confirm" autocomplete="off">
+      <p style="margin-top:14px"><button class="btn danger" type="submit">Delete my account and data</button></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

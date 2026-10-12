@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Sign in - TalentForge AI{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:32px auto">
+<div class="card">
+  <h1>Sign in</h1>
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="email">Email</label><input id="email" type="email" name="email" required autofocus>
+    <label for="password">Password</label><input id="password" type="password" name="password" required>
+    <p style="margin-top:18px"><button class="btn" type="submit">Sign in</button></p>
+  </form>
+  <p class="muted small">New here? <a href="/register">Create an account</a></p>
+</div></div>
+{% endblock %}

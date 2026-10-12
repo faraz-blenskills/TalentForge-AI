@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Target role - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumbs">Step 3 of 3</div><h1>Choose your target role</h1>
+  <p class="muted">Your skill gap and score are measured against this role. You can change it any time.</p></div></div>
+<form method="post" action="/candidate/target">
+  <div class="grid g2">
+  {% for rid, r in roles.items() %}
+    <label class="card checkbox" style="margin:0;cursor:pointer">
+      <input type="radio" name="role_id" value="{{ rid }}" {{ 'checked' if current == rid }} required>
+      <span><strong>{{ r.title }}</strong><br><span class="muted small">{{ r.description }}</span><br>
+        {% for s, w in r.required.items() %}<span class="tag neutral">{{ s }}</span>{% endfor %}</span>
+    </label>
+  {% endfor %}
+  </div>
+  <p style="margin-top:18px"><button class="btn" type="submit">See my results</button></p>
+</form>
+{% endblock %}

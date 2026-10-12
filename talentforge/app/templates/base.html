@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TalentForge AI{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% set path = request.url.path %}
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="/">Talent<span>Forge</span> AI</a>
+  {% if user and user.role == 'candidate' %}
+    <a class="link {{ 'active' if path.startswith('/candidate/dashboard') }}" href="/candidate/dashboard">Dashboard</a>
+    <a class="link {{ 'active' if path.startswith('/candidate/gap') }}" href="/candidate/gap">Skill gap</a>
+    <a class="link {{ 'active' if path.startswith('/candidate/score') }}" href="/candidate/score">Score</a>
+    <a class="link {{ 'active' if path.startswith('/candidate/jobs') }}" href="/candidate/jobs">Jobs</a>
+    <a class="link {{ 'active' if path.startswith('/candidate/applications') }}" href="/candidate/applications">Applications</a>
+    <a class="link {{ 'active' if path.startswith('/candidate/profile') }}" href="/candidate/profile">Profile</a>
+  {% elif user and user.role == 'employer' %}
+    <a class="link {{ 'active' if path == '/employer' }}" href="/employer">Dashboard</a>
+    <a class="link {{ 'active' if path.startswith('/employer/jobs') }}" href="/employer/jobs">Jobs</a>
+    <a class="link" href="/employer/jobs/new">Post a job</a>
+    <a class="link" href="/employer/setup">Organisation</a>
+  {% elif user and user.role == 'admin' %}
+    <a class="link" href="/admin">Overview</a>
+    <a class="link" href="/admin/audit">Audit log</a>
+  {% endif %}
+  <span class="spacer"></span>
+  {% if user %}
+    <span class="muted small">{{ user.name }} &middot; {{ user.role }}</span>
+    {% if user.role == 'candidate' %}<a class="link" href="/candidate/settings">Settings</a>{% endif %}
+    <form method="post" action="/logout"><button class="linklike">Sign out</button></form>
+  {% else %}
+    <a class="link" href="/login">Sign in</a>
+    <a class="btn small" href="/register">Get started</a>
+  {% endif %}
+</div></nav>
+<main class="container">
+  {% for kind, msg in flashes %}<div class="flash {{ kind }}">{{ msg }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<div class="footer">TalentForge AI &middot; Phase 1 research prototype &middot; AI output is decision support; a human makes every hiring decision.</div>
+</body>
+</html>

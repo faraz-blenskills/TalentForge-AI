@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">AI career portal for candidates</p>
+    <h1>A resume that fits <em>every</em> job you apply for.</h1>
+    <p class="lead">Upload or build your resume, see exactly why it scores what it does, tailor it to any posting in minutes, and let a job agent search for roles that match you.</p>
+    <div class="row" style="margin-top:22px">
+      {% if user %}<a class="btn" href="/dashboard">Go to your dashboard</a>
+      {% else %}<a class="btn" href="/register">Start free</a>
+      <a class="btn ghost" href="/login">Sign in</a>{% endif %}
+    </div>
+    <p class="hint">No auto-applying. No invented experience. You approve every change.</p>
+  </div>
+  <div class="card dark">
+    <p class="eyebrow" style="color:rgba(243,240,238,.7)">Resume score</p>
+    <div class="row" style="gap:22px;margin:10px 0 16px">
+      {{ ui.ring(86) }}
+      <div><h3 style="margin:0">Excellent</h3><p class="muted small">7 checks, every point explained</p></div>
+    </div>
+    <div class="bar"><i style="width:86%"></i></div>
+    <p class="small" style="margin-top:14px">Quantify results in 2 more bullets &rarr; +4 points</p>
+    <p class="small muted">Match with "Backend Developer" rose 58 &rarr; 81 after tailoring.</p>
+  </div>
+</section>
+
+<section class="grid g3" style="margin-top:20px">
+  <div class="card"><p class="eyebrow">01 &middot; Resume</p><h3>Upload or build from scratch</h3><p class="muted">PDF, DOCX or text becomes an editable, structured resume. Or start from a blank builder with a live preview.</p></div>
+  <div class="card"><p class="eyebrow">02 &middot; Tailor</p><h3>Suggestions you can review</h3><p class="muted">Keyword gaps, stronger bullets and a role-specific summary. Nothing is added unless you accept it.</p></div>
+  <div class="card"><p class="eyebrow">03 &middot; Jobs</p><h3>An agent that searches for you</h3><p class="muted">It plans queries, checks several job sources, removes duplicates, and ranks results against your resume.</p></div>
+</section>
+
+<section class="card" style="margin-top:20px">
+  <p class="eyebrow">Where jobs come from</p>
+  <p class="muted">Only official job feeds and APIs are used. LinkedIn and Indeed prohibit scraping, so they are reachable only through licensed aggregator APIs that you enable with your own key.</p>
+  <div class="chips">{% for s in sources %}<span class="chip">{{ s.label }} &middot; {{ 'ready' if s.available else 'needs key' }}</span>{% endfor %}</div>
+</section>
+{% endblock %}

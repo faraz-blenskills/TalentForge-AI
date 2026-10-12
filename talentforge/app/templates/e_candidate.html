@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% import "_m.html" as ui %}
+{% block title %}Candidate review - TalentForge AI{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/employer/jobs/{{ job.id }}/candidates{{ '?blind=1' if blind }}">&larr; Ranked candidates</a></div>
+<div class="page-head"><div><h1>{{ vp.name }}</h1>
+  <p class="muted">Applied for <strong>{{ job.title }}</strong> &middot; {{ ui.status_tag(application.status) }}</p></div></div>
+{% if blind %}<div class="blind-banner">Anonymised review: identity fields are hidden.</div>{% endif %}
+<div class="grid g-side">
+  <div>
+    <div class="card">
+      <div class="row" style="gap:22px;align-items:flex-start">
+        {{ ui.ring(m.score) }}
+        <div class="grow">
+          <p class="muted small" style="margin:0">AI suggests: <strong>{{ m.recommendation }}</strong> - decision support only</p>
+          {{ ui.explain(narrative, source) }}
+        </div>
+      </div>
+      <h3 style="margin-top:22px">How the score was built</h3>
+      {{ ui.factor_bars(m.factors) }}
+      <p class="hint">{{ m.method }}</p>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h3>Evidence for required skills</h3>
+      {% for i in m.matched %}<span class="tag ok">{{ i.skill }}</span><span class="muted small">weight {{ i.weight }}/3</span>
+        {% if i.evidence %}<div class="evidence">"{{ i.evidence }}"</div>{% endif %}{% endfor %}
+      {% for i in m.partial %}<span class="tag partial">{{ i.skill }}</span><span class="muted small">{{ i.via }}</span><br>{% endfor %}
+      {% for i in m.missing %}<span class="tag miss">{{ i.skill }}</span><span class="muted small">no evidence found</span><br>{% endfor %}
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h3>Profile</h3>
+      {% if vp.email %}<p class="small">{{ vp.email }}</p>{% endif %}
+      <p class="small"><strong>Experience:</strong> {{ '%g'|format(vp.experience_years) }} year(s)</p>
+      <p class="small"><strong>Education:</strong><br>{% for e in vp.education %}{{ e }}<br>{% else %}Not detected{% endfor %}</p>
+      <p class="small"><strong>Projects:</strong><br>{% for p in vp.projects %}&bull; {{ p }}<br>{% else %}None listed{% endfor %}</p>
+      <p class="small"><strong>Certifications:</strong><br>{% for c in vp.certifications %}&bull; {{ c }}<br>{% else %}None listed{% endfor %}</p>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h3>Your decision</h3>
+      <form method="post" action="/employer/applications/{{ application.id }}/decision">
+        {% if blind %}<input type="hidden" name="blind" value="1">{% endif %}
+        <label for="decision">Decision</label>
+        <select id="decision" name="decision">
+          <option value="shortlist">Shortlist</option><option value="hold">Hold</option><option value="reject">Reject</option>
+        </select>
+        <label for="reason">Reason <span class="muted">(required)</span></label>
+        <textarea id="reason" name="reason" rows="3" required placeholder="Why are you making this decision?"></textarea>
+        <label class="checkbox" style="margin-top:10px"><input type="checkbox" name="share_feedback" value="1">
+          <span>If rejecting, share AI-drafted feedback with the candidate</span></label>
+        <p style="margin-top:14px"><button class="btn" type="submit">Record decision</button></p>
+      </form>
+      {% if decisions %}<h3 style="margin-top:18px">History</h3>
+        {% for d in decisions %}<div class="small" style="margin-bottom:8px"><strong>{{ d.decision }}</strong> by {{ d.decider }} &middot; AI suggested {{ d.ai_recommendation }}
+          <div class="muted">{{ d.reason }}</div><div class="muted">{{ d.decided_at }}</div></div>{% endfor %}{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

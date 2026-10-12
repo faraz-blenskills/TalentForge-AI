@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Resumes - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head"><div class="grow"><p class="eyebrow">Portfolio</p><h1>Your resumes</h1>
+  <p class="muted">Each resume is scored on 7 checks. Tailor a copy for every job you apply to.</p></div></div>
+
+<div class="grid g2">
+  <form class="card" method="post" action="/resumes/upload" enctype="multipart/form-data">
+    <p class="eyebrow">Option 1</p><h3>Upload a resume</h3>
+    <p class="muted small">PDF, DOCX or TXT up to 5 MB. We extract the sections so you can edit them.</p>
+    <input type="file" name="resume" accept=".pdf,.docx,.txt">
+    <details style="margin-top:12px"><summary class="small muted" style="cursor:pointer">or paste the text</summary>
+      <textarea name="pasted" rows="6" placeholder="Paste your resume text"></textarea></details>
+    <p style="margin-top:16px"><button class="btn" type="submit">Upload and score</button></p>
+  </form>
+  <form class="card dark" method="post" action="/resumes/new">
+    <p class="eyebrow" style="color:rgba(243,240,238,.7)">Option 2</p><h3>Build from scratch</h3>
+    <p class="muted small">A guided builder with a live preview, a live score and suggestions as you type.</p>
+    <label for="title" style="color:#f3f0ee">Resume name</label>
+    <input id="title" type="text" name="title" value="My resume">
+    <p style="margin-top:16px"><button class="btn accent" type="submit">Start building</button></p>
+  </form>
+</div>
+
+<h2 style="margin-top:36px">Saved resumes</h2>
+{% if resumes %}
+<div class="grid g3">
+  {% for r in resumes %}
+  <div class="card">
+    <div class="row top" style="gap:16px">
+      {{ ui.ring(r.score, 'sm') }}
+      <div class="grow">
+        <h3 class="clip"><a href="/resumes/{{ r.id }}" style="text-decoration:none">{{ r.title }}</a></h3>
+        <div>{% if r.is_default %}<span class="tag ink">Default</span>{% endif %}
+          <span class="tag">{{ {'upload':'Uploaded','builder':'Built','tailored':'Tailored'}.get(r.source, r.source) }}</span>
+          {% if r.job_title %}<span class="tag accent clip" style="max-width:100%">for {{ r.job_title }}</span>{% endif %}</div>
+        <div class="muted tiny">Updated {{ r.updated_at|dt }}</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <a class="btn sm" href="/resumes/{{ r.id }}/tailor">Tailor</a>
+      <a class="btn ghost sm" href="/resumes/{{ r.id }}/edit">Edit</a>
+      <a class="btn ghost sm" href="/resumes/{{ r.id }}">View</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}<div class="card"><p class="muted">No resumes yet. Upload one or start building above.</p></div>{% endif %}
+{% endblock %}

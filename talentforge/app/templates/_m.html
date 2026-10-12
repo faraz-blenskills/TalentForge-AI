@@ -1,0 +1,26 @@
+{% macro ring(score, size='') -%}
+<div class="ring {{ size }} {{ 'good' if score >= 70 else 'mid' if score >= 50 else 'low' }}" style="--p: {{ score }}"><span>{{ '%d'|format(score) }}</span></div>
+{%- endmacro %}
+
+{% macro factor_bars(factors) -%}
+{% for f in factors %}
+<div class="factor">
+  <div class="top"><span>{{ f.label }}</span><span>{{ f.points }} / {{ f.max_points }} pts</span></div>
+  <div class="bar"><i style="width: {{ (f.value * 100)|round|int }}%"></i></div>
+  <div class="detail">{{ f.detail }}</div>
+  {% if f.tip %}<div class="tip">&#8594; {{ f.tip }}</div>{% endif %}
+</div>
+{% endfor %}
+{%- endmacro %}
+
+{% macro explain(text, source) -%}
+<div class="explain">
+  <div class="src">Plain-language explanation &middot; {{ 'written by Claude from the facts below' if source == 'claude' else 'template (no LLM key configured)' }}</div>
+  <p style="margin:6px 0 0">{{ text }}</p>
+</div>
+{%- endmacro %}
+
+{% macro status_tag(status) -%}
+{% set cls = {'matched':'ok','partial':'partial','missing':'miss','shortlisted':'ok','rejected':'miss','on_hold':'partial','applied':'neutral'}.get(status,'neutral') %}
+<span class="tag {{ cls }}">{{ status|replace('_',' ') }}</span>
+{%- endmacro %}

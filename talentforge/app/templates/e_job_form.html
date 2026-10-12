@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if job else 'New' }} job - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Edit job' if job else 'Post a job' }}</h1></div>
+{% if notice %}<div class="flash info">{{ notice }}</div>{% endif %}
+<form method="post" action="/employer/jobs/save" class="card">
+  <input type="hidden" name="job_id" value="{{ job.id if job }}">
+  <label for="title">Job title</label><input id="title" type="text" name="title" value="{{ title }}" required>
+  <label for="description">Description</label>
+  <textarea id="description" name="description" rows="7" placeholder="Paste the job description. Use 'Extract skills' to fill the required skills automatically.">{{ description }}</textarea>
+  <div class="grid g3">
+    <div><label for="location">Location</label><input id="location" type="text" name="location" value="{{ location }}"></div>
+    <div><label for="job_type">Type</label>
+      <select id="job_type" name="job_type">{% for t in ['Full-time','Part-time','Internship','Contract'] %}<option {{ 'selected' if job_type == t }}>{{ t }}</option>{% endfor %}</select></div>
+    <div><label for="min_years">Minimum years of experience</label><input id="min_years" type="number" step="0.5" min="0" max="20" name="min_years" value="{{ min_years }}"></div>
+  </div>
+  <label for="required">Required skills <span class="muted">(skill:weight, weight 1-3)</span></label>
+  <textarea id="required" name="required" rows="2" placeholder="python:3, sql:3, docker:2">{{ required_text }}</textarea>
+  <label for="preferred">Preferred skills <span class="muted">(optional)</span></label>
+  <input id="preferred" type="text" name="preferred" value="{{ preferred_text }}" placeholder="aws, redis">
+  <div class="hint">Catalogue: {{ all_skills|join(', ') }}</div>
+  <label for="status">Status</label>
+  <select id="status" name="status">{% for s in ['open','draft','closed'] %}<option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>{% endfor %}</select>
+  <p style="margin-top:18px">
+    <button class="btn" type="submit" name="action" value="save">Save job</button>
+    <button class="btn ghost" type="submit" name="action" value="extract" formnovalidate>Extract skills from description</button>
+  </p>
+</form>
+{% endblock %}

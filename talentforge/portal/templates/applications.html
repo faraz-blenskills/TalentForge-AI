@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Applications - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head"><div class="grow"><p class="eyebrow">Tracker</p><h1>Applications</h1>
+  <p class="muted">Jobs you saved or applied to. Move them along as things progress.</p></div></div>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">
+  {% for st, label in [('saved','Saved'),('applied','Applied'),('interview','Interview'),('offer','Offer'),('rejected','Closed')] %}
+  <div class="card tight" style="background:var(--paper)">
+    <div class="row"><b class="grow">{{ label }}</b><span class="tag">{{ cols[st]|length }}</span></div>
+    {% for j in cols[st] %}
+    <div class="card tight" style="margin-top:10px;box-shadow:none">
+      <a href="/jobs/{{ j.id }}" style="text-decoration:none"><b class="clip" style="display:block">{{ j.title }}</b></a>
+      <div class="muted small clip">{{ j.company }}</div>
+      <form method="post" action="/jobs/{{ j.id }}/status" style="margin-top:8px">
+        <select name="status" onchange="this.form.submit()" style="padding:6px 10px;font-size:.85rem">
+          {% for s2, l2 in [('saved','Saved'),('applied','Applied'),('interview','Interview'),('offer','Offer'),('rejected','Closed'),('dismissed','Remove')] %}
+          <option value="{{ s2 }}" {{ 'selected' if s2 == st }}>{{ l2 }}</option>{% endfor %}
+        </select>
+      </form>
+    </div>
+    {% else %}<p class="muted small" style="margin-top:10px">Empty</p>{% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

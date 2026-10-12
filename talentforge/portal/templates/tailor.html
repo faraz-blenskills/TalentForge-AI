@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Tailor resume - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head"><div class="grow"><p class="eyebrow"><a href="/resumes/{{ r.id }}" style="text-decoration:none">&larr; {{ r.title }}</a></p>
+  <h1>Tailor this resume to a job</h1>
+  <p class="muted">Paste a posting or pick one your agents found. You review every suggestion before a new copy is created.</p></div></div>
+
+{% if not result %}
+<div class="grid g-main">
+  <form class="card" method="post" action="/resumes/{{ r.id }}/tailor">
+    <input type="hidden" name="result_id" value="{{ job.result_id or '' }}">
+    <label for="title">Job title</label><input id="title" type="text" name="title" value="{{ job.title }}" required placeholder="e.g. Backend Developer">
+    <label for="company">Company <span class="muted">(optional)</span></label><input id="company" type="text" name="company" value="{{ job.company }}">
+    <label for="description">Job description</label>
+    <textarea id="description" name="description" rows="14" required placeholder="Paste the full job description here">{{ job.description }}</textarea>
+    <p style="margin-top:18px"><button class="btn" type="submit">Analyse and suggest changes</button></p>
+  </form>
+  <div class="card">
+    <h3>How tailoring works</h3>
+    <p class="muted small">1. Skills and keywords in the posting are compared with your resume.<br>2. You get suggestions: a role-specific summary, stronger bullet openers, keyword gaps, skill order.<br>3. Anything that needs a fact only you know (a number, a tool) is left for you to confirm.<br>4. Accepted changes create a new copy; your original stays untouched.</p>
+    {% if llm_on %}<p class="tag accent">Claude is enabled for wording suggestions</p>{% else %}<p class="tag">Rule-based suggestions (set ANTHROPIC_API_KEY for AI wording)</p>{% endif %}
+  </div>
+</div>
+{% else %}
+<div class="grid g-main">
+  <form method="post" action="/resumes/{{ r.id }}/tailor/apply">
+    <input type="hidden" name="payload" value="{{ payload }}">
+    <div class="card" style="margin-bottom:18px">
+      <p class="eyebrow">Posting</p><h3>{{ job.title }}{% if job.company %} &middot; {{ job.company }}{% endif %}</h3>
+      <p class="muted small">Select the suggestions you want. Items marked <span class="tag warn">confirm</span> are off by default because only you know if they are true.</p>
+    </div>
+    {% for s in result.suggestions %}
+    <div class="suggestion {{ 'on' if s.default_on }}">
+      <label class="check" style="margin:0">
+        <input type="checkbox" name="accept" value="{{ s.id }}" {{ 'checked' if s.default_on }}>
+        <span><b>{{ s.title }}</b>
+          <span class="tag {{ 'accent' if s.impact == 'high' else '' }}">{{ s.impact }} impact</span>
+          {% if s.source == 'claude' %}<span class="tag ink">AI</span>{% endif %}
+          {% if not s.default_on %}<span class="tag warn">confirm</span>{% endif %}
+          <br><span class="muted small">{{ s.reason }}</span></span>
+      </label>
+      {% if s.original or s.suggested %}
+      <div class="diff">
+        <div class="was"><div class="tiny muted">Now</div>{{ s.original or '(empty)' }}</div>
+        <div class="now"><div class="tiny muted">Suggested</div>{{ s.suggested or '(you provide the result below)' }}</div>
+      </div>{% endif %}
+      {% if s.needs_input %}
+        <label for="in_{{ loop.index }}" class="small">Your result <span class="muted">(true facts only)</span></label>
+        <input id="in_{{ loop.index }}" type="text" name="input_{{ s.id }}" placeholder="{{ s.input_hint }}">
+      {% endif %}
+    </div>
+    {% endfor %}
+    <p><button class="btn" type="submit">Create tailored resume</button>
+      <a class="btn ghost" href="/resumes/{{ r.id }}/tailor">Start over</a></p>
+  </form>
+
+  <div class="stack">
+    <div class="card">
+      <p class="eyebrow">Match with this job</p>
+      <div class="row" style="gap:20px">{{ ui.ring(before) }}
+        <div><h3 style="margin:0">{{ '%g'|format(before) }} / 100</h3>
+          <p class="muted small">{{ (result.match.coverage * 100)|round|int }}% of key skills covered</p></div></div>
+    </div>
+    <div class="card">
+      <h3>Keywords in the posting</h3>
+      <div>{% for k in result.match.keywords %}
+        <span class="tag {{ 'ok' if k.skill in result.match.matched else 'warn' if k.skill in result.match.partial else 'miss' }}">{{ k.skill }}</span>{% endfor %}</div>
+      <p class="hint">Green: on your resume. Amber: related skill present. Red: missing.</p>
+      {% if result.extra_terms %}<p class="small muted">Other terms the posting repeats: {{ result.extra_terms|join(', ') }}</p>{% endif %}
+    </div>
+    <div class="card">
+      <div class="row" style="gap:16px">{{ ui.ring(ats.score, 'sm') }}<div><b>{{ ats.grade }}</b><div class="muted small">Current resume score</div></div></div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

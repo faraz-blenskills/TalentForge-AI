@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% import "_m.html" as ui %}
+{% block content %}
+<section class="hero">
+  <div>
+    <span class="tag brand">Agentic AI &middot; Explainable &middot; Human-in-the-loop</span>
+    <h1 style="margin-top:12px">Know where you stand. Hire on evidence.</h1>
+    <p class="lead">TalentForge AI gives candidates an explained employability score and skill-gap plan, and gives employers a ranked shortlist with the reasons behind every rank.</p>
+    <div class="row" style="margin-top:18px">
+      <a class="btn" href="/register?role=candidate">I'm a candidate</a>
+      <a class="btn ghost" href="/register?role=employer">I'm hiring</a>
+    </div>
+    <p class="hint" style="margin-top:12px">Free during the research phase. No auto-reject: a person always decides.</p>
+  </div>
+  <div class="hero-card">
+    <div class="row" style="gap:18px">
+      {{ ui.ring(72) }}
+      <div>
+        <h3>Employability 72 / 100</h3>
+        <p class="muted small">Backend Developer &middot; Developing</p>
+        <span class="tag ok">python</span><span class="tag ok">sql</span><span class="tag partial">fastapi</span><span class="tag miss">docker</span>
+      </div>
+    </div>
+    <div class="explain" style="margin-top:14px"><div class="src">Why this score</div>
+      <p style="margin:6px 0 0">Strong on core skills and projects. Docker and a second project would add about 9 points.</p></div>
+  </div>
+</section>
+
+<section class="grid g3" style="margin-top:24px">
+  <div class="card"><div class="step-num">1</div><h3>Upload your resume</h3><p class="muted">We extract skills, education, experience and projects. You review and correct the result.</p></div>
+  <div class="card"><div class="step-num">2</div><h3>See the gap</h3><p class="muted">Compare your profile with a target role, get an explained score and a "what if" simulator.</p></div>
+  <div class="card"><div class="step-num">3</div><h3>Match and apply</h3><p class="muted">Jobs are ranked with the reasons they matched. Employers see the same evidence.</p></div>
+</section>
+
+<section class="grid g3" style="margin-top:18px">
+  <div class="card"><h3>Explainable by default</h3><p class="muted">Every score shows its factors, weights and the resume line that earned the points.</p></div>
+  <div class="card"><h3>Identity-blind review</h3><p class="muted">Employers can hide names, emails and institutions. Scoring never uses them.</p></div>
+  <div class="card"><h3>Humans decide</h3><p class="muted">Shortlist or reject always needs a recorded reason. Rejected candidates can get constructive feedback.</p></div>
+</section>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% import "_m.html" as ui %}
+{% block title %}Ranked candidates - TalentForge AI{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/employer/jobs">&larr; Jobs</a></div>
+<div class="page-head"><div><h1>{{ job.title }}</h1>
+  <p class="muted">{{ total }} applicant(s), ranked by match. AI ranks - you decide.</p></div>
+  <span class="spacer"></span>
+  <a class="btn ghost small" href="?blind={{ '0' if blind else '1' }}">{{ 'Show identities' if blind else 'Anonymised review mode' }}</a>
+  <a class="btn ghost small" href="/employer/jobs/{{ job.id }}/shortlist">Shortlist</a>
+</div>
+{% if blind %}<div class="blind-banner">Anonymised review: names, emails and institutions are hidden. <a href="?blind=0">Show identities</a></div>{% endif %}
+<div class="card tight row" style="margin-bottom:16px">
+  <span class="tag {{ 'ok' if check.identical else 'miss' }}">{{ 'Identity-blind check passed' if check.identical else 'Ranking changed when identities were removed' }}</span>
+  <span class="muted small">Re-ran the ranking with names, emails and institutions removed: order {{ 'unchanged' if check.identical else 'differs' }} across {{ check.n }} candidate(s).</span>
+  <span class="spacer"></span>
+  <form method="get" class="row">
+    {% if blind %}<input type="hidden" name="blind" value="1">{% endif %}
+    <select name="status" style="width:auto"><option value="">All statuses</option>
+      {% for s in ['applied','shortlisted','on_hold','rejected'] %}<option value="{{ s }}" {{ 'selected' if status_filter == s }}>{{ s|replace('_',' ') }}</option>{% endfor %}</select>
+    <input type="number" name="min" value="{{ min_score|int }}" min="0" max="100" style="width:90px" title="Minimum score">
+    <button class="btn small">Filter</button>
+  </form>
+</div>
+<div class="table-wrap"><table>
+  <thead><tr><th>#</th><th>Candidate</th><th>Score</th><th>Why</th><th>AI suggests</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for r in rows %}
+    <tr>
+      <td><strong>{{ r.rank }}</strong></td>
+      <td><strong>{{ r.label }}</strong><div class="muted small">{{ '%g'|format(r.profile.experience_years) }} yr &middot; {{ r.profile.projects|length }} project(s)</div></td>
+      <td>{{ ui.ring(r.match.score, 'sm') }}</td>
+      <td class="small">
+        {% for i in r.match.matched[:4] %}<span class="tag ok">{{ i.skill }}</span>{% endfor %}
+        {% for i in r.match.missing[:3] %}<span class="tag miss">{{ i.skill }}</span>{% endfor %}
+      </td>
+      <td><span class="tag {{ 'ok' if r.match.recommendation == 'shortlist' else 'partial' if r.match.recommendation == 'review' else 'miss' }}">{{ r.match.recommendation }}</span></td>
+      <td>{{ ui.status_tag(r.status) }}</td>
+      <td class="right"><a class="btn small" href="/employer/applications/{{ r.application_id }}{{ '?blind=1' if blind }}">Review</a></td>
+    </tr>
+  {% else %}<tr><td colspan="7" class="muted">No applicants match these filters yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% endblock %}

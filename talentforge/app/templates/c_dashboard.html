@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% import "_m.html" as ui %}
+{% block title %}Dashboard - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Hello, {{ (p.name or user.name).split(' ')[0] }}</h1>
+  <p class="muted">Measured against <strong>{{ res.role_title }}</strong> &middot; <a href="/candidate/target">change role</a></p></div></div>
+<div class="grid g-side">
+  <div class="card">
+    <div class="row" style="gap:24px">
+      {{ ui.ring(res.score) }}
+      <div>
+        <div class="stat">{{ res.score }}<span class="muted" style="font-size:1rem"> / 100</span></div>
+        <span class="tag {{ 'ok' if res.band == 'Strong' else 'partial' if res.band == 'Developing' else 'miss' }}">{{ res.band }}</span>
+        <p class="muted small" style="margin-top:8px">{{ res.method }}</p>
+        <a class="btn ghost small" href="/candidate/score">Why this score &amp; what-if</a>
+      </div>
+    </div>
+    <h3 style="margin-top:22px">Score breakdown</h3>
+    {{ ui.factor_bars(res.factors) }}
+  </div>
+  <div>
+    <div class="card">
+      <h3>Biggest gaps</h3>
+      {% for s in suggestions %}
+        <p style="margin-bottom:10px"><span class="tag {{ 'miss' if s.status == 'missing' else 'partial' }}">{{ s.skill }}</span>
+        <span class="muted small">weight {{ s.weight }}/3</span><br><span class="small">{{ s.tip }}</span></p>
+      {% else %}<p class="muted">No gaps against this role. Nice.</p>{% endfor %}
+      <a href="/candidate/gap">Full skill-gap report &rarr;</a>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h3>Next</h3>
+      <p><a class="btn small" href="/candidate/jobs">Browse matched jobs</a></p>
+      <p class="muted small">{{ n_apps }} application(s) so far &middot; <a href="/candidate/applications">track</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

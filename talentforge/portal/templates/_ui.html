@@ -1,0 +1,40 @@
+{% macro ring(score, size='') -%}
+<div class="ring {{ size }} {{ score|score_class }}" style="--p: {{ score }}"><span>{{ '%d'|format(score) }}</span></div>
+{%- endmacro %}
+
+{% macro paper(d, template='classic') -%}
+{% set b = d.basics %}
+<div class="paper {{ template }}">
+  <h1 class="name">{% if b.name %}{{ b.name }}{% else %}<span class="empty">Your name</span>{% endif %}</h1>
+  {% if b.headline %}<div class="headline">{{ b.headline }}</div>{% endif %}
+  <div class="contact">{{ ([b.email, b.phone, b.location] + b.links)|select|join('  |  ') }}</div>
+  {% if d.summary %}<h2 class="sec">Summary</h2><div>{{ d.summary }}</div>{% endif %}
+  {% if d.skills %}<h2 class="sec">Skills</h2><div>{{ d.skills|join(', ') }}</div>{% endif %}
+  {% if d.experience %}<h2 class="sec">Experience</h2>
+    {% for e in d.experience %}<div class="entry">
+      <div class="t"><span>{{ [e.role, e.company]|select|join(' | ') }}{% if e.location %}<span class="sub"> &middot; {{ e.location }}</span>{% endif %}</span>
+        <span class="d">{{ [e.start, e.end]|select|join(' - ') }}</span></div>
+      {% if e.bullets %}<ul>{% for t in e.bullets %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
+    </div>{% endfor %}{% endif %}
+  {% if d.projects %}<h2 class="sec">Projects</h2>
+    {% for p in d.projects %}<div class="entry">
+      <div class="t"><span>{{ p.name }}{% if p.description %}<span class="sub" style="font-weight:400"> - {{ p.description }}</span>{% endif %}</span></div>
+      {% if p.bullets %}<ul>{% for t in p.bullets %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
+    </div>{% endfor %}{% endif %}
+  {% if d.education %}<h2 class="sec">Education</h2>
+    {% for e in d.education %}<div class="entry"><div class="t"><span>{{ [e.degree, e.institution]|select|join(' | ') }}</span><span class="d">{{ e.year }}</span></div>
+      {% if e.details %}<div class="sub">{{ e.details }}</div>{% endif %}</div>{% endfor %}{% endif %}
+  {% if d.certifications %}<h2 class="sec">Certifications</h2><ul>{% for c in d.certifications %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro score_checks(s) -%}
+{% for c in s.checks %}
+<div class="check-row">
+  <div class="top"><span>{{ c.label }}</span><span>{{ c.points|round(1) }} / {{ c.max }}</span></div>
+  <div class="bar {{ 'good' if c.status == 'good' else 'low' if c.status == 'low' else '' }}"><i style="width: {{ (c.points / c.max * 100)|round|int }}%"></i></div>
+  {% for f in c.findings %}<div class="muted small" style="margin-top:4px">{{ f }}</div>{% endfor %}
+  {% for f in c.fixes %}<div class="fix">{{ f }}</div>{% endfor %}
+</div>
+{% endfor %}
+{%- endmacro %}

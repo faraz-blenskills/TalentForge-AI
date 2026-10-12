@@ -1,0 +1,7 @@
+Backend Developer (Python)
+
+We are looking for a Backend Developer to build and maintain REST APIs for our cloud platform.
+You will work with Python and FastAPI, design PostgreSQL schemas, containerise services with Docker and
+deploy them on AWS using CI/CD pipelines. Strong Git and Linux skills are required. Experience with
+Redis and automated testing with pytest is a plus. You will collaborate with frontend engineers and
+own features from design to production. 0-2 years of experience, freshers with strong projects welcome.

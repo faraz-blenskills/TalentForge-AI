@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ j.title }} - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head">
+  <div class="grow"><p class="eyebrow"><a href="/jobs?tab=matches" style="text-decoration:none">&larr; Matches</a></p>
+    <h1>{{ j.title }}</h1>
+    <p class="muted">{{ j.company }} &middot; {{ j.location or 'Location not set' }}{% if j.salary %} &middot; {{ j.salary }}{% endif %}
+      &middot; via {{ j.via or j.source }}{% if j.posted_at %} &middot; posted {{ j.posted_at }}{% endif %}</p>
+    <span class="tag {{ 'accent' if j.status == 'new' else 'ink' if j.status in ('saved','applied') else '' }}">{{ j.status }}</span>
+    {% for t in j.tags[:6] %}<span class="tag">{{ t }}</span>{% endfor %}</div>
+  {% if j.url %}<a class="btn" href="{{ j.url }}" target="_blank" rel="noopener noreferrer">Open original posting &#8599;</a>{% endif %}
+</div>
+
+<div class="grid g-main">
+  <div class="card"><h3>Job description</h3><div style="white-space:pre-wrap;line-height:1.6">{{ j.description or 'No description provided by the source.' }}</div></div>
+  <div class="stack">
+    <div class="card">
+      <p class="eyebrow">Match with your resume</p>
+      <div class="row" style="gap:20px">{{ ui.ring(j.match_score) }}
+        <div class="grow"><p class="muted small" style="margin:0">{{ ((m.get('coverage', 0)) * 100)|round|int }}% of the posting's key skills are on your resume.</p></div></div>
+      <h3 style="margin-top:16px">You have</h3>
+      <div>{% for s in m.get('matched', []) %}<span class="tag ok">{{ s }}</span>{% else %}<span class="muted small">No listed skills matched.</span>{% endfor %}</div>
+      {% if m.get('partial') %}<h3 style="margin-top:12px">Related</h3><div>{% for s in m.partial %}<span class="tag warn">{{ s }}</span>{% endfor %}</div>{% endif %}
+      <h3 style="margin-top:12px">Missing</h3>
+      <div>{% for s in m.get('missing', []) %}<span class="tag miss">{{ s }}</span>{% else %}<span class="muted small">Nothing - strong match.</span>{% endfor %}</div>
+    </div>
+    <div class="card">
+      <h3>Next steps</h3>
+      {% if default %}<p><a class="btn block" href="/resumes/{{ default.id }}/tailor?job={{ j.id }}">Tailor my resume for this job</a></p>
+      {% else %}<p class="muted small">Add a resume to tailor it for this job.</p>{% endif %}
+      {% if resumes|length > 1 %}
+      <form method="get" id="pick" class="row"><select onchange="if(this.value)location='/resumes/'+this.value+'/tailor?job={{ j.id }}'" style="flex:1">
+        <option value="">Use a different resume...</option>{% for r in resumes %}<option value="{{ r.id }}">{{ r.title }}</option>{% endfor %}</select></form>{% endif %}
+      <div class="row" style="margin-top:12px">
+        {% for st, lab in [('saved','Save'),('applied','Mark as applied'),('dismissed','Not interested')] %}
+        <form class="inline" method="post" action="/jobs/{{ j.id }}/status"><input type="hidden" name="status" value="{{ st }}">
+          <button class="btn ghost sm">{{ lab }}</button></form>{% endfor %}
+      </div>
+      <p class="hint">Applying happens on the original posting. TalentForge never submits applications for you.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

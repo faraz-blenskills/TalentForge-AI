@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TalentForge AI{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/portal.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% set path = request.url.path %}
+<header class="topbar noprint">
+  <a class="brand glass-pill" href="{{ '/dashboard' if user else '/' }}"><span class="brand-mark">T</span><span>Talent<b>Forge</b></span></a>
+  {% if user %}
+  <nav class="nav glass-pill">
+    <a class="{{ 'active' if path == '/dashboard' }}" href="/dashboard">Home</a>
+    <a class="{{ 'active' if path.startswith('/resumes') }}" href="/resumes">Resumes</a>
+    <a class="{{ 'active' if path.startswith('/jobs') }}" href="/jobs">Jobs</a>
+    <a class="{{ 'active' if path.startswith('/applications') }}" href="/applications">Applications</a>
+  </nav>
+  <div class="account glass-pill">
+    <span class="muted">{{ user.name.split(' ')[0] }}</span>
+    <a class="avatar" href="/settings" title="Settings" style="text-decoration:none">{{ user.name[:1]|upper }}</a>
+    <form class="inline" method="post" action="/logout"><button class="linkbtn">Sign out</button></form>
+  </div>
+  {% else %}
+  <span style="flex:1"></span>
+  <a class="btn ghost sm" href="/login">Sign in</a>
+  <a class="btn sm" href="/register">Get started</a>
+  {% endif %}
+</header>
+{% if user %}
+<nav class="mobile-nav glass-pill noprint">
+  <a class="{{ 'active' if path == '/dashboard' }}" href="/dashboard">Home</a>
+  <a class="{{ 'active' if path.startswith('/resumes') }}" href="/resumes">Resumes</a>
+  <a class="{{ 'active' if path.startswith('/jobs') }}" href="/jobs">Jobs</a>
+  <a class="{{ 'active' if path.startswith('/applications') }}" href="/applications">Tracker</a>
+</nav>
+{% endif %}
+<main class="page {% block pageclass %}{% endblock %}">
+  {% for kind, msg in flashes %}<div class="flash {{ kind }}">{{ msg }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<div class="footer noprint">TalentForge AI &middot; research prototype &middot; AI suggestions are advice; you decide what goes on your resume.</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

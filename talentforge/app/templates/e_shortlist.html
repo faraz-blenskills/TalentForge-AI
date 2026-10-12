@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Shortlist - TalentForge AI{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/employer/jobs/{{ job.id }}/candidates">&larr; Ranked candidates</a></div>
+<div class="page-head"><div><h1>Shortlist &middot; {{ job.title }}</h1><p class="muted">Candidates you have shortlisted, with your recorded reasons.</p></div>
+  <span class="spacer"></span><a class="btn ghost small" href="/employer/jobs/{{ job.id }}/shortlist.csv">Export CSV</a></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>Rank</th><th>Candidate</th><th>Match</th><th>Your reason</th><th>Decided</th></tr></thead>
+  <tbody>{% for r in items %}
+    <tr><td>{{ r.rank }}</td><td><strong>{{ r.profile.name or ('Candidate #' ~ r.application_id) }}</strong><div class="muted small">{{ r.profile.email }}</div></td>
+    <td>{{ '%d'|format(r.match.score) }}</td><td class="small">{{ r.reason }}</td><td class="small">{{ r.decided_at }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Nobody shortlisted yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% endblock %}

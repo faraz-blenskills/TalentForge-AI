@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ agent.name }} - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head">
+  <div class="grow"><p class="eyebrow"><a href="/jobs" style="text-decoration:none">&larr; Jobs</a></p><h1>{{ agent.name }}</h1>
+    <p class="muted">"{{ agent.query }}" &middot; {{ agent.level }} level{% if agent.locations %} &middot; {{ agent.locations|join(', ') }}{% endif %}
+      &middot; {{ agent.work_modes|join(' / ') }}</p></div>
+  <form class="inline" method="post" action="/jobs/agents/{{ agent.id }}/run"><button class="btn">Run now</button></form>
+  <form class="inline" method="post" action="/jobs/agents/{{ agent.id }}/toggle"><button class="btn ghost">{{ 'Pause' if agent.active else 'Resume' }}</button></form>
+  <a class="btn ghost" href="/jobs/agents/{{ agent.id }}/edit">Edit</a>
+</div>
+
+<div class="grid g-main">
+  <div class="card">
+    <div class="row"><h3 class="grow">Matches ({{ results|length }})</h3>
+      <form method="get" class="inline"><select name="status" onchange="this.form.submit()" style="width:auto">
+        <option value="">Any status</option>{% for s in ['new','seen','saved','applied'] %}<option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>{% endfor %}</select></form></div>
+    {% for j in results %}
+    <div class="list-row">
+      {{ ui.ring(j.match_score, 'xs') }}
+      <div class="grow">
+        <h3 class="clip"><a href="/jobs/{{ j.id }}" style="text-decoration:none">{{ j.title }}</a></h3>
+        <div class="muted small clip">{{ j.company }} &middot; {{ j.location or 'Location not set' }} &middot; via {{ j.via or j.source }}</div>
+        <div>{% for s in j.match.get('matched', [])[:4] %}<span class="tag ok">{{ s }}</span>{% endfor %}
+          {% for s in j.match.get('missing', [])[:3] %}<span class="tag miss">{{ s }}</span>{% endfor %}</div>
+      </div>
+      <span class="tag {{ 'accent' if j.status == 'new' else '' }}">{{ j.status }}</span>
+    </div>
+    {% else %}<p class="muted" style="margin-top:12px">Nothing yet. Press Run now.</p>{% endfor %}
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <h3>What the agent did</h3>
+      {% if runs %}
+      <p class="muted tiny">Run {{ runs[0].started_at|dt }} &middot; {{ runs[0].found }} postings checked &middot; {{ runs[0].new_count }} new</p>
+      <div class="agent-log">
+        {% for st in runs[0].log %}<div class="step {{ st.step }}"><span class="at">{{ st.at }}</span>{{ st.detail }}</div>{% endfor %}
+      </div>
+      {% else %}<p class="muted">No runs yet.</p>{% endif %}
+    </div>
+    <div class="card tight">
+      <b>Resume used</b>
+      <p class="muted small" style="margin:4px 0 0">{% if resume %}{{ resume.title }} ({{ '%d'|format(resume.score) }}){% else %}None - add a resume first{% endif %}</p>
+      <form class="inline" method="post" action="/jobs/agents/{{ agent.id }}/delete" onsubmit="return confirm('Delete this agent?')">
+        <button class="linkbtn" style="margin-top:8px;padding-left:0">Delete agent</button></form>
+    </div>
+  </div>
+</div>
+{% endblock %}

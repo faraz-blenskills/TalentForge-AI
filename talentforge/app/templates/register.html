@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Create account - TalentForge AI{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:24px auto">
+<div class="card">
+  <h1>Create your account</h1>
+  <form method="post" action="/register">
+    <label>I am a</label>
+    <div class="row">
+      <label class="checkbox"><input type="radio" name="role" value="candidate" {{ 'checked' if role != 'employer' }}> Candidate / employee</label>
+      <label class="checkbox"><input type="radio" name="role" value="employer" {{ 'checked' if role == 'employer' }}> Employer / recruiter</label>
+    </div>
+    <label for="name">Full name</label><input id="name" type="text" name="name" required>
+    <label for="email">Email</label><input id="email" type="email" name="email" required>
+    <label for="password">Password</label><input id="password" type="password" name="password" minlength="8" required>
+    <div class="hint">At least 8 characters.</div>
+    <label class="checkbox" style="margin-top:16px"><input type="checkbox" name="consent" value="1" required>
+      <span>I agree that my resume and profile data will be processed by AI to generate scores and matches, and that I can delete my data at any time.</span></label>
+    <p style="margin-top:18px"><button class="btn" type="submit">Create account</button></p>
+  </form>
+  <p class="muted small">Already registered? <a href="/login">Sign in</a></p>
+</div></div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Review profile - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumbs">Step 2 of 3</div><h1>Review your profile</h1>
+  <p class="muted">Parsed from <strong>{{ filename or 'your resume' }}</strong>. Correct anything that is wrong - your score uses what you save here.</p></div></div>
+{% if p.warnings %}<div class="flash warn"><strong>Check these:</strong><ul style="margin:6px 0 0 18px">{% for w in p.warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>{% endif %}
+<form method="post" action="/candidate/profile" class="card">
+  <div class="grid g2">
+    <div><label for="name">Name</label><input id="name" type="text" name="name" value="{{ p.name }}"></div>
+    <div><label for="email">Email</label><input id="email" type="text" name="email" value="{{ p.email }}"></div>
+  </div>
+  <label for="skills">Skills <span class="muted">(comma separated)</span></label>
+  <textarea id="skills" name="skills" rows="3">{{ skills_text }}</textarea>
+  <div class="hint">Known skills: {{ all_skills|join(', ') }}</div>
+  <div class="grid g2">
+    <div><label for="education">Education <span class="muted">(one per line)</span></label>
+      <textarea id="education" name="education" rows="3">{{ edu_text }}</textarea></div>
+    <div><label for="experience_years">Years of experience</label>
+      <input id="experience_years" type="number" step="0.5" min="0" max="40" name="experience_years" value="{{ p.experience_years }}">
+      {% if p.experience_entries %}<div class="hint">Detected: {{ p.experience_entries|join(' | ') }}</div>{% endif %}</div>
+  </div>
+  <div class="grid g2">
+    <div><label for="projects">Projects <span class="muted">(one per line)</span></label>
+      <textarea id="projects" name="projects" rows="4">{{ proj_text }}</textarea></div>
+    <div><label for="certifications">Certifications <span class="muted">(one per line)</span></label>
+      <textarea id="certifications" name="certifications" rows="4">{{ cert_text }}</textarea></div>
+  </div>
+  <p style="margin-top:18px"><button class="btn" type="submit">Save and continue</button>
+    <a class="btn ghost" href="/candidate/upload">Upload a different resume</a></p>
+</form>
+{% endblock %}

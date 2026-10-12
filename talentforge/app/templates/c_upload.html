@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Upload resume - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumbs">Step 1 of 3</div><h1>Upload your resume</h1>
+  <p class="muted">We read it once, build your profile, and let you correct anything we got wrong.</p></div></div>
+<div class="grid g-side">
+  <div class="card">
+    <form method="post" action="/candidate/upload" enctype="multipart/form-data">
+      <label for="resume">Resume file (PDF, DOCX or TXT, up to 5 MB)</label>
+      <input id="resume" type="file" name="resume" accept=".pdf,.docx,.txt">
+      <p class="muted" style="margin:16px 0 0">&hellip;or paste the text</p>
+      <textarea name="pasted" rows="8" placeholder="Paste your resume text here"></textarea>
+      <p style="margin-top:16px"><button class="btn" type="submit">Analyse resume</button></p>
+    </form>
+  </div>
+  <div class="card">
+    <h3>What happens next</h3>
+    <p class="muted small">1. Skills, education, experience and projects are extracted.<br>2. You review and edit them.<br>3. You pick a target role and see your explained score.</p>
+    <h3 style="margin-top:14px">Your data</h3>
+    <p class="muted small">Name, email and institution are never used for scoring. You can delete everything from Settings.</p>
+    {% if existing %}<p class="small">You already have a profile. Uploading again replaces the parsed data.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

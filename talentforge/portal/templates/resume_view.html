@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}{{ r.title }} - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head">
+  <div class="grow"><p class="eyebrow"><a href="/resumes" style="text-decoration:none">Resumes</a></p><h1>{{ r.title }}</h1>
+    <div>{% if r.is_default %}<span class="tag ink">Default</span>{% endif %}
+      <span class="tag">{{ {'upload':'Uploaded','builder':'Built','tailored':'Tailored'}.get(r.source, r.source) }}</span>
+      {% if r.job_title %}<span class="tag accent">for {{ r.job_title }}{% if r.job_company %} at {{ r.job_company }}{% endif %}</span>{% endif %}</div></div>
+  <a class="btn" href="/resumes/{{ r.id }}/tailor">Tailor to a job</a>
+  <a class="btn ghost" href="/resumes/{{ r.id }}/edit">Edit</a>
+</div>
+
+{% if s.tailoring %}
+<div class="card" style="margin-bottom:20px;border-color:var(--accent)">
+  <p class="eyebrow">Tailored resume</p>
+  <div class="row" style="gap:24px">
+    <div><div class="muted small">Match with {{ s.tailoring.job_title }}</div>
+      <div style="font-size:2rem;font-weight:500">{{ '%g'|format(s.tailoring.before) }} &rarr; {{ '%g'|format(s.tailoring.after) }}</div></div>
+    <div class="grow small muted">Changes applied: {{ s.tailoring.applied|join('; ') if s.tailoring.applied else 'none' }}. Created from "{{ s.tailoring.source_resume }}".</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid g-main">
+  {{ ui.paper(d, r.template) }}
+  <div class="stack">
+    <div class="card">
+      <div class="row" style="gap:20px">{{ ui.ring(r.score) }}
+        <div><h3 style="margin:0">{{ s.grade }}</h3><p class="muted small">ATS-readiness score</p></div></div>
+      <div style="margin-top:12px">{{ ui.score_checks(s) }}</div>
+    </div>
+    <div class="card tight">
+      <div class="row">
+        <a class="btn sm" href="/resumes/{{ r.id }}/download.docx">Download DOCX</a>
+        <a class="btn ghost sm" href="/resumes/{{ r.id }}/print" target="_blank">Print / PDF</a>
+        {% if not r.is_default %}<form class="inline" method="post" action="/resumes/{{ r.id }}/default"><button class="btn ghost sm">Make default</button></form>{% endif %}
+        <form class="inline" method="post" action="/resumes/{{ r.id }}/duplicate"><button class="btn ghost sm">Duplicate</button></form>
+        <form class="inline" method="post" action="/resumes/{{ r.id }}/delete" onsubmit="return confirm('Delete this resume?')"><button class="btn ghost sm">Delete</button></form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

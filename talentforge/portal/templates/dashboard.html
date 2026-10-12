@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Home - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head"><div class="grow"><p class="eyebrow">Home</p><h1>{{ greeting }}, {{ user.name.split(' ')[0] }}</h1></div>
+  <a class="btn" href="/resumes">Manage resumes</a></div>
+
+<div class="grid g4">
+  <a class="card stat" href="/resumes"><div class="n">{{ counts.resumes }}</div><div class="l">Resumes</div></a>
+  <a class="card stat" href="/resumes"><div class="n">{{ '%d'|format(counts.best_score) }}</div><div class="l">Best resume score</div></a>
+  <a class="card stat" href="/jobs?tab=matches"><div class="n">{{ counts.new_matches }}</div><div class="l">New job matches</div></a>
+  <a class="card stat" href="/jobs"><div class="n">{{ counts.agents }}</div><div class="l">Active job agents</div></a>
+</div>
+
+<div class="grid g-main" style="margin-top:20px">
+  <div class="stack">
+    <div class="card dark">
+      <p class="eyebrow" style="color:rgba(243,240,238,.7)">Your next best step</p>
+      {% if not default %}
+        <h2>Add your resume to get started</h2>
+        <p class="muted">Upload an existing resume or build one from scratch. You will see a score and fixes in seconds.</p>
+        <a class="btn accent" href="/resumes">Upload or build a resume</a>
+      {% elif default.score < 75 %}
+        <h2>Raise your resume score from {{ '%d'|format(default.score) }}</h2>
+        <p class="muted">{{ default.score_detail.top_fixes[0] if default.score_detail.top_fixes else 'Review the checks to see what to improve.' }}</p>
+        <a class="btn accent" href="/resumes/{{ default.id }}/edit">Improve this resume</a>
+      {% elif not agents %}
+        <h2>Let an agent find roles for you</h2>
+        <p class="muted">Tell it the role you want. It searches several job sources and ranks results against your resume.</p>
+        <a class="btn accent" href="/jobs/agents/new">Create a job agent</a>
+      {% elif counts.new_matches %}
+        <h2>{{ counts.new_matches }} new match{{ 'es' if counts.new_matches != 1 }} to review</h2>
+        <p class="muted">Open one and tailor your resume to it before applying.</p>
+        <a class="btn accent" href="/jobs?tab=matches">Review matches</a>
+      {% else %}
+        <h2>You're set up</h2>
+        <p class="muted">Run your agents to look for fresh postings, or tailor your resume to a specific role.</p>
+        <a class="btn accent" href="/jobs">Open jobs</a>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="row"><h3 class="grow">Top job matches</h3><a class="small" href="/jobs?tab=matches">See all</a></div>
+      {% for j in top_jobs %}
+      <a class="list-row" href="/jobs/{{ j.id }}" style="text-decoration:none">
+        {{ ui.ring(j.match_score, 'xs') }}
+        <div class="grow"><h3 class="clip">{{ j.title }}</h3><div class="muted small clip">{{ j.company }} &middot; {{ j.location or 'Location not set' }}</div></div>
+        <span class="tag {{ 'accent' if j.status == 'new' else '' }}">{{ j.status }}</span>
+      </a>
+      {% else %}<p class="muted" style="margin-top:10px">No matches yet. {% if agents %}Run an agent from the Jobs page.{% else %}<a href="/jobs/agents/new"><b>Create a job agent</b></a> to start.{% endif %}</p>{% endfor %}
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <h3>Default resume</h3>
+      {% if default %}
+        <div class="row" style="gap:18px;margin:10px 0">
+          {{ ui.ring(default.score, 'sm') }}
+          <div class="grow"><b class="clip" style="display:block">{{ default.title }}</b><span class="muted small">{{ default.score_detail.grade }}</span></div>
+        </div>
+        {% for f in default.score_detail.top_fixes[:3] %}<div class="fix">{{ f }}</div>{% endfor %}
+        <div class="row" style="margin-top:14px">
+          <a class="btn sm" href="/resumes/{{ default.id }}/tailor">Tailor to a job</a>
+          <a class="btn ghost sm" href="/resumes/{{ default.id }}">View</a>
+        </div>
+      {% else %}<p class="muted">No resume yet.</p>{% endif %}
+    </div>
+    <div class="card">
+      <div class="row"><h3 class="grow">Job agents</h3><a class="small" href="/jobs/agents/new">New</a></div>
+      {% for a in agents[:4] %}
+        <a class="list-row" href="/jobs/agents/{{ a.id }}" style="text-decoration:none">
+          <div class="grow"><b class="clip" style="display:block">{{ a.name }}</b><span class="muted small">{{ a.stats.total }} found &middot; {{ a.stats.unseen }} new</span></div>
+          <span class="tag {{ 'ok' if a.active else '' }}">{{ 'working' if a.active else 'paused' }}</span>
+        </a>
+      {% else %}<p class="muted">No agents yet.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

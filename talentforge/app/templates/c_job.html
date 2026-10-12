@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% import "_m.html" as ui %}
+{% block title %}{{ job.title }} - TalentForge AI{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="/candidate/jobs">&larr; All jobs</a></div>
+<div class="page-head"><div><h1>{{ job.title }}</h1>
+  <p class="muted">{{ job.org_name }} &middot; {{ job.location or 'Location not set' }} &middot; {{ job.job_type }}{% if job.min_years %} &middot; {{ '%g'|format(job.min_years) }}+ yrs{% endif %}</p></div>
+  <span class="spacer"></span>
+  {% if already %}<span class="tag neutral">You applied &middot; {{ already.status|replace('_',' ') }}</span>
+  {% elif job.status == 'open' %}
+    <form method="post" action="/candidate/jobs/{{ job.id }}/apply" class="inline-form"><button class="btn">Apply with my profile</button></form>
+  {% else %}<span class="tag neutral">Closed</span>{% endif %}
+</div>
+<div class="grid g-side">
+  <div>
+    <div class="card"><h3>About the role</h3><p style="white-space:pre-wrap">{{ job.description or 'No description provided.' }}</p></div>
+    <div class="card" style="margin-top:18px"><h3>Skills this role asks for</h3>
+      <p>{% for s, w in job.required.items() %}<span class="tag neutral">{{ s }} &middot; {{ w }}/3</span>{% endfor %}</p>
+      {% if job.preferred %}<p class="muted small">Preferred:</p><p>{% for s in job.preferred %}<span class="tag neutral">{{ s }}</span>{% endfor %}</p>{% endif %}
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h3>Your match</h3>
+      <div class="row" style="gap:16px;margin-bottom:10px">
+        {{ ui.ring(m.score, 'sm') }}
+        <div class="muted small">out of 100</div>
+      </div>
+      {% for f in m.factors %}
+        <div class="factor"><div class="top"><span>{{ f.label }}</span><span>{{ f.points }}/{{ f.max_points }}</span></div>
+        <div class="bar"><i style="width: {{ (f.value * 100)|round|int }}%"></i></div><div class="detail">{{ f.detail }}</div></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<div class="card" style="margin-top:18px">
+  <h3>Why this matched</h3>
+  <div class="explain"><div class="src">Plain-language explanation &middot; {{ 'written by Claude from the facts' if source == 'claude' else 'template' }}</div><p style="margin:6px 0 0">{{ narrative }}</p></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div><h3>Skills you have</h3>
+      {% for i in m.matched %}<span class="tag ok">{{ i.skill }}</span>{% if i.evidence %}<div class="evidence">"{{ i.evidence }}"</div>{% endif %}{% else %}<p class="muted">None of the required skills were found.</p>{% endfor %}
+    </div>
+    <div><h3>Still to cover</h3>
+      {% for i in m.partial %}<span class="tag partial">{{ i.skill }}</span><span class="muted small">{{ i.via }}</span><br>{% endfor %}
+      {% for i in m.missing %}<span class="tag miss">{{ i.skill }}</span>{% endfor %}
+      {% if not m.partial and not m.missing %}<p class="muted">Nothing - you cover every required skill.</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

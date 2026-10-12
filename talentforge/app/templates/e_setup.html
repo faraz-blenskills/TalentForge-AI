@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Organisation - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Organisation profile' if org else 'Set up your organisation' }}</h1></div>
+<form method="post" action="/employer/setup" class="card" style="max-width:640px">
+  <label for="name">Organisation name</label><input id="name" type="text" name="name" value="{{ org.name if org }}" required>
+  <label for="industry">Industry</label><input id="industry" type="text" name="industry" value="{{ org.industry if org }}">
+  <div class="grid g2">
+    <div><label for="size">Size</label><input id="size" type="text" name="size" value="{{ org.size if org }}" placeholder="e.g. 51-200"></div>
+    <div><label for="website">Website</label><input id="website" type="text" name="website" value="{{ org.website if org }}"></div>
+  </div>
+  <p style="margin-top:18px"><button class="btn" type="submit">Save</button></p>
+</form>
+{% endblock %}

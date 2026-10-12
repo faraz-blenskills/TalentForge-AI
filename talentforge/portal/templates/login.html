@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Sign in - TalentForge AI{% endblock %}
+{% block content %}
+<div class="grid g2" style="align-items:stretch;max-width:1000px;margin:20px auto 0">
+  <div class="card">
+    <p class="eyebrow">Welcome back</p>
+    <h1 style="font-size:2.3rem">Sign in to your portal</h1>
+    <form method="post" action="/login">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label for="email">Email</label><input id="email" type="email" name="email" required autofocus autocomplete="username">
+      <label for="password">Password</label><input id="password" type="password" name="password" required autocomplete="current-password">
+      <p style="margin-top:22px"><button class="btn block" type="submit">Sign in</button></p>
+    </form>
+    <p class="muted small">New here? <a href="/register"><b>Create an account</b></a></p>
+  </div>
+  <div class="card dark" style="display:flex;flex-direction:column;justify-content:flex-end;min-height:360px">
+    <p class="eyebrow" style="color:rgba(243,240,238,.7)">What's inside</p>
+    <h2>Resume score. Tailoring. Job agents.</h2>
+    <p class="muted">Everything a candidate needs to apply with confidence, in one place.</p>
+  </div>
+</div>
+{% endblock %}

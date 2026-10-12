@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% import "_m.html" as ui %}
+{% block title %}Applications - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>My applications</h1></div></div>
+{% if items %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Job</th><th>Company</th><th>Match</th><th>Status</th><th>Applied</th></tr></thead>
+  <tbody>{% for a in items %}
+    <tr><td><strong>{{ a.title }}</strong><div class="muted small">{{ a.location }}</div>
+      {% if a.decision == 'reject' and a.share_feedback and a.feedback %}
+        <div class="explain" style="margin-top:8px"><div class="src">Feedback from the employer</div><p class="small" style="margin:4px 0 0">{{ a.feedback }}</p></div>
+      {% endif %}</td>
+    <td>{{ a.org_name }}</td><td>{{ '%d'|format(a.match_score) }}</td>
+    <td>{{ ui.status_tag(a.status) }}</td><td class="small">{{ a.applied_at }}</td></tr>
+  {% endfor %}</tbody></table></div>
+{% else %}<div class="card"><p class="muted">You haven't applied to anything yet.</p><a class="btn" href="/candidate/jobs">Browse jobs</a></div>{% endif %}
+{% endblock %}

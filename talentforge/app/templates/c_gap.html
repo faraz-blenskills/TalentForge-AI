@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% import "_m.html" as ui %}
+{% block title %}Skill gap - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Skill-gap report</h1>
+  <p class="muted">{{ role.title }} &middot; {{ (res.gap.coverage * 100)|round|int }}% of weighted required skills covered</p></div>
+  <span class="spacer"></span><a class="btn ghost small" href="/candidate/target">Change role</a></div>
+<div class="grid g-side">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Required skill</th><th>Importance</th><th>Status</th><th>Evidence / next step</th></tr></thead>
+    <tbody>
+    {% for i in res.gap['items'] %}
+      <tr>
+        <td><strong>{{ i.skill }}</strong></td>
+        <td>{{ '&#9679;'|safe * i.weight }}<span class="muted">{{ '&#9675;'|safe * (3 - i.weight) }}</span></td>
+        <td>{{ ui.status_tag(i.status) }}</td>
+        <td class="small">
+          {% if i.status == 'matched' %}{% if i.evidence %}<span class="muted">"{{ i.evidence }}"</span>{% endif %}{% if i.via %}<br><span class="muted">{{ i.via }}</span>{% endif %}
+          {% elif i.status == 'partial' %}{{ i.via }}.<br>{{ i.tip }}
+          {% else %}{{ i.tip }}{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody></table></div>
+  <div>
+    <div class="card"><h3>Preferred skills</h3>
+      {% for p in res.gap.preferred %}<span class="tag {{ 'ok' if p.status == 'matched' else 'neutral' }}">{{ p.skill }}</span>{% endfor %}
+    </div>
+    <div class="card" style="margin-top:18px"><h3>Learn next</h3>
+      {% for s in suggestions %}
+        <p class="small"><strong>{{ s.skill }}</strong> <span class="muted">(weight {{ s.weight }})</span><br>{{ s.tip }}</p>
+      {% else %}<p class="muted">You cover every required skill.</p>{% endfor %}
+      <p class="hint">Phase 1 gives suggestions only; a full learning roadmap comes later.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

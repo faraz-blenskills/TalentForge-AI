@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Jobs - TalentForge AI{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Job postings</h1><span class="spacer"></span><a class="btn" href="/employer/jobs/new">Post a job</a></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>Title</th><th>Status</th><th>Applicants</th><th>Created</th><th></th></tr></thead>
+  <tbody>{% for j in jobs %}
+    <tr><td><strong>{{ j.title }}</strong></td>
+    <td><span class="tag {{ 'ok' if j.status == 'open' else 'neutral' }}">{{ j.status }}</span></td>
+    <td>{{ j.n_apps }}</td><td class="small">{{ j.created_at }}</td>
+    <td class="right">
+      <a class="btn ghost small" href="/employer/jobs/{{ j.id }}/candidates">Candidates</a>
+      <a class="btn ghost small" href="/employer/jobs/{{ j.id }}/edit">Edit</a>
+      {% if j.status != 'closed' %}<form class="inline-form" method="post" action="/employer/jobs/{{ j.id }}/close"><button class="btn ghost small">Close</button></form>{% endif %}
+    </td></tr>
+  {% else %}<tr><td colspan="5" class="muted">No jobs yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+{% endblock %}

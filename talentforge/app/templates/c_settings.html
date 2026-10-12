@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head"><h1>Settings and privacy</h1></div>
+<div class="card" style="max-width:640px">
+  <h3>What we store</h3>
+  <p class="muted">Your parsed profile, the resume text, your applications and the scores computed from them. Name, email and institution are never used to compute scores or ranks.</p>
+  <h3 style="margin-top:18px">Delete my data</h3>
+  <p class="muted">This permanently removes your account, resume, profile and applications.</p>
+  <form method="post" action="/candidate/delete">
+    <label for="confirm">Type DELETE to confirm</label>
+    <input id="confirm" type="text" name="confirm" autocomplete="off">
+    <p style="margin-top:14px"><button class="btn danger" type="submit">Delete everything</button></p>
+  </form>
+</div>
+{% endblock %}

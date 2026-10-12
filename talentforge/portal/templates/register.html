@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Create account - TalentForge AI{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:20px auto 0">
+  <p class="eyebrow">Candidate account</p>
+  <h1 style="font-size:2.3rem">Create your account</h1>
+  <form method="post" action="/register">
+    <label for="name">Full name</label><input id="name" type="text" name="name" required autocomplete="name">
+    <label for="email">Email</label><input id="email" type="email" name="email" required autocomplete="email">
+    <label for="password">Password</label><input id="password" type="password" name="password" minlength="8" required autocomplete="new-password">
+    <div class="hint">At least 8 characters.</div>
+    <label class="check" style="margin-top:18px"><input type="checkbox" name="consent" value="1" required>
+      <span class="small">I agree that my resume and profile data are processed by AI to score resumes and match jobs, and that I can delete all my data any time.</span></label>
+    <p style="margin-top:20px"><button class="btn block" type="submit">Create account</button></p>
+  </form>
+  <p class="muted small">Already registered? <a href="/login"><b>Sign in</b></a></p>
+</div>
+{% endblock %}
