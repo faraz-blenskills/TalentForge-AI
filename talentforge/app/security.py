@@ -29,6 +29,9 @@ def session_secret(base_dir: Path) -> str:
     env = os.environ.get("TALENTFORGE_SECRET")
     if env:
         return env
+    if os.environ.get("VERCEL"):
+        # every serverless instance must share one secret, and the disk is read-only
+        raise RuntimeError("Set TALENTFORGE_SECRET (a long random string) in the Vercel project's environment.")
     f = base_dir / "data" / ".session_secret"
     f.parent.mkdir(parents=True, exist_ok=True)
     if not f.exists():

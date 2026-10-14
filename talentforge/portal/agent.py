@@ -267,6 +267,22 @@ def _finish(run_id: int, agent_id: int, run: Run, found: int, new: int) -> None:
     db.run("UPDATE job_agents SET last_run_at=? WHERE id=?", (now, agent_id))
 
 
+def run_due_agents(limit: int = 5, min_hours: float = 12.0) -> dict:
+    """Run active agents that have not run for `min_hours` (oldest first). Used by the serverless cron job."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=min_hours)).strftime("%Y-%m-%d %H:%M:%S")
+    due = db.rows("SELECT id, user_id FROM job_agents WHERE active=1 AND (last_run_at IS NULL OR last_run_at < ?) "
+                  "ORDER BY COALESCE(last_run_at, '') ASC LIMIT ?", (cutoff, int(limit)))
+    ran, failed, new = 0, 0, 0
+    for a in due:
+        try:
+            res = run_agent(a["user_id"], a["id"])
+            ran += 1
+            new += res.get("new", 0)
+        except Exception:
+            failed += 1
+    return {"due": len(due), "ran": ran, "failed": failed, "new_matches": new}
+
+
 # --------------------------------------------------------------------------- background scheduler
 class Scheduler:
     def __init__(self, interval_minutes: int = 120):

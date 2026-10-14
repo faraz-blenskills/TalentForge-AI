@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import base64
+import hmac
 import json
 import os
 import re
+import time
 from datetime import datetime
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -21,30 +23,38 @@ from app import db
 from app.security import hash_password, session_secret, verify_password
 
 from . import agent as agent_mod
-from . import ai, improve, providers, store, styles, tailor
+from . import ai, improve, providers, store, styles, supa_auth, tailor
 from .doc_extract import extract_text
 from .export import resume_to_docx
 from .resume_score import score_resume
 from .resume_struct import empty_resume, normalize, parse_with_report
+from .supa_auth import supa
 
 BASE = Path(__file__).resolve().parent
 ROOT = BASE.parent
-MAX_UPLOAD = 5 * 1024 * 1024
+ON_VERCEL = bool(os.environ.get("VERCEL"))
+# Vercel rejects request bodies over 4.5 MB, so keep a safety margin there
+MAX_UPLOAD = (4 if ON_VERCEL else 5) * 1024 * 1024
 SCHEDULER = agent_mod.Scheduler(int(os.environ.get("PORTAL_AGENT_INTERVAL_MIN", "120")))
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    db.init_db()
-    store.init()
-    if os.environ.get("PORTAL_AGENT_SCHEDULER", "1") != "0":
+    # Serverless: tables are created once with `python -m portal.dbtool init`, not on every cold start,
+    # and there is no long-lived process for a background scheduler (Vercel Cron calls /internal/cron/agents).
+    if not ON_VERCEL or os.environ.get("RUN_DB_INIT") == "1":
+        db.init_db()
+        store.init()
+    if not ON_VERCEL and os.environ.get("PORTAL_AGENT_SCHEDULER", "1") != "0":
         SCHEDULER.start()
     yield
     SCHEDULER.stop()
 
 
+_HTTPS = ON_VERCEL or os.environ.get("SITE_URL", "").startswith("https://")
 app = FastAPI(title="TalentForge Portal", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=session_secret(ROOT), same_site="lax", max_age=60 * 60 * 8)
+app.add_middleware(SessionMiddleware, secret_key=session_secret(ROOT), same_site="lax", max_age=60 * 60 * 8,
+                   https_only=_HTTPS)
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE / "templates"))
 
@@ -86,10 +96,16 @@ def flash(request: Request, msg: str, kind: str = "info") -> None:
     request.session.setdefault("flash", []).append([kind, msg])
 
 
+def _password_login_allowed() -> bool:
+    return os.environ.get("ALLOW_PASSWORD_LOGIN", "1") != "0"
+
+
 def render(request: Request, name: str, status_code: int = 200, **ctx) -> HTMLResponse:
     ctx.setdefault("user", current_user(request))
     ctx["flashes"] = request.session.pop("flash", [])
     ctx["llm_on"] = ai.enabled()
+    ctx["supa_on"] = supa.enabled
+    ctx["allow_password"] = _password_login_allowed()
     return templates.TemplateResponse(request, name, ctx, status_code=status_code)
 
 
@@ -111,6 +127,16 @@ def _save_resume_data(resume: dict, data: dict, title: str | None = None, templa
     return score
 
 
+@app.get("/internal/cron/agents", response_class=JSONResponse)
+def cron_run_agents(request: Request):
+    """Called by Vercel Cron (which sends `Authorization: Bearer $CRON_SECRET`). Runs the agents that are due."""
+    secret = os.environ.get("CRON_SECRET", "")
+    got = request.headers.get("authorization", "")
+    if not secret or not hmac.compare_digest(got.encode(), f"Bearer {secret}".encode()):
+        raise HTTPException(401, "Unauthorized")
+    return agent_mod.run_due_agents(limit=int(os.environ.get("CRON_AGENT_LIMIT", "5")))
+
+
 @app.get("/healthz", response_class=Response)
 def healthz():
     return Response("ok", media_type="text/plain")
@@ -124,6 +150,8 @@ def landing(request: Request):
 
 @app.get("/register", response_class=HTMLResponse)
 def register_form(request: Request):
+    if not _password_login_allowed():
+        return RedirectResponse("/login", status_code=303)
     return render(request, "register.html")
 
 
@@ -155,11 +183,16 @@ def register(request: Request, name: str = Form(...), email: str = Form(...), pa
 def login_form(request: Request):
     if current_user(request):
         return RedirectResponse("/dashboard", status_code=303)
-    return render(request, "login.html", next=request.query_params.get("next", ""))
+    step = request.query_params.get("step", "")
+    otp_email = request.session.get("otp_email", "") if step == "code" else ""
+    return render(request, "login.html", next=request.query_params.get("next", ""), step=step, otp_email=otp_email)
 
 
 @app.post("/login")
 def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form("")):
+    if not _password_login_allowed():
+        flash(request, "Password sign-in is turned off. Use Google or an email code.", "error")
+        return RedirectResponse("/login", status_code=303)
     u = db.one("SELECT * FROM users WHERE email=?", (email.strip().lower(),))
     if not u or not verify_password(password, u["password_hash"]):
         flash(request, "Incorrect email or password.", "error")
@@ -177,6 +210,137 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=303)
+
+
+# --------------------------------------------------------------------------- Supabase sign-in (Google + email code)
+_OTP_BY_EMAIL: dict[str, list[float]] = {}
+_OTP_BY_IP: dict[str, list[float]] = {}
+
+
+def _allow(bucket: dict, key: str, limit: int, window: float = 600.0) -> bool:
+    """Sliding-window limiter: at most `limit` events per `window` seconds for `key`."""
+    now = time.time()
+    hits = [t for t in bucket.get(key, []) if now - t < window]
+    allowed = len(hits) < limit
+    if allowed:
+        hits.append(now)
+    bucket[key] = hits
+    return allowed
+
+
+def _site_url(request: Request) -> str:
+    """Public origin of this request, so sign-in returns to whichever address the user actually used
+    (localhost, a LAN address, a tunnel or the Vercel domain). Supabase only honours redirect URLs that are
+    on its allow-list, so a spoofed Host header cannot send anyone elsewhere."""
+    if os.environ.get("SITE_URL_FORCE") and os.environ.get("SITE_URL"):
+        return os.environ["SITE_URL"].rstrip("/")
+    host = request.headers.get("x-forwarded-host")
+    if host:
+        scheme = (request.headers.get("x-forwarded-proto") or "https").split(",")[0].strip()
+        return f"{scheme}://{host.split(',')[0].strip()}"
+    return str(request.base_url).rstrip("/")
+
+
+def _login_with_auth_user(request: Request, au: supa_auth.AuthUser) -> bool:
+    """Map a verified Supabase identity to our own users row (creating or linking it) and start a session."""
+    u = db.one("SELECT * FROM users WHERE auth_uid=?", (au.uid,))
+    if not u:
+        u = db.one("SELECT * FROM users WHERE email=?", (au.email,))
+        if u:
+            if not au.email_verified:
+                flash(request, "Verify your email before linking it to an existing account.", "error")
+                return False
+            db.run("UPDATE users SET auth_uid=? WHERE id=?", (au.uid, u["id"]))
+        else:
+            uid = db.run(
+                "INSERT INTO users(email, name, password_hash, role, consent_at, created_at, auth_uid) "
+                "VALUES (?,?,?,?,?,?,?)", (au.email, au.name, "!external", "candidate", db.now(), db.now(), au.uid))
+            u = {"id": uid, "role": "candidate"}
+            db.audit(uid, "register", f"user:{uid}", "candidate via supabase")
+    if u["role"] != "candidate":
+        flash(request, "This portal is for candidate accounts.", "error")
+        return False
+    request.session.clear()                    # new session on privilege change
+    request.session["uid"] = u["id"]
+    db.audit(u["id"], "login", f"user:{u['id']}", "supabase")
+    return True
+
+
+@app.get("/auth/google")
+def auth_google(request: Request):
+    if not supa.enabled:
+        flash(request, "Google sign-in is not configured on this server yet.", "error")
+        return RedirectResponse("/login", status_code=303)
+    verifier, challenge = supa_auth.new_pkce()
+    request.session["pkce"] = verifier
+    return RedirectResponse(supa.google_url(f"{_site_url(request)}/auth/callback", challenge), status_code=303)
+
+
+@app.get("/auth/callback")
+def auth_callback(request: Request):
+    q = request.query_params
+    verifier = request.session.pop("pkce", "")
+    if q.get("error") or q.get("error_description"):
+        flash(request, "Google sign-in was cancelled or refused. You can try again.", "error")
+        return RedirectResponse("/login", status_code=303)
+    try:
+        au = supa.exchange_code(q.get("code", ""), verifier)
+    except supa_auth.AuthError as e:
+        flash(request, str(e), "error")
+        return RedirectResponse("/login", status_code=303)
+    if not _login_with_auth_user(request, au):
+        return RedirectResponse("/login", status_code=303)
+    return RedirectResponse("/dashboard", status_code=303)
+
+
+@app.post("/auth/otp/request")
+def otp_request(request: Request, email: str = Form(...), name: str = Form("")):
+    email = email.strip().lower()
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        flash(request, "Please enter a valid email address.", "error")
+        return RedirectResponse("/login", status_code=303)
+    ip = request.client.host if request.client else "unknown"
+    if not _allow(_OTP_BY_EMAIL, email, 3) or not _allow(_OTP_BY_IP, ip, 10):
+        flash(request, "Too many code requests. Please wait a few minutes and try again.", "error")
+        return RedirectResponse("/login", status_code=303)
+    verifier, challenge = supa_auth.new_pkce()
+    try:
+        supa.otp_request(email, name.strip()[:120], challenge=challenge,
+                         redirect_to=f"{_site_url(request)}/auth/callback")
+    except supa_auth.AuthError as e:
+        flash(request, str(e), "error")
+        return RedirectResponse("/login", status_code=303)
+    request.session["pkce"] = verifier             # lets the emailed link finish signing in on this browser
+    request.session["otp_email"] = email
+    request.session["otp_tries"] = 0
+    flash(request, f"We emailed {email} a sign-in link. If the email also shows a 6-digit code you can type it "
+                   "below instead. It expires in a few minutes.", "ok")
+    return RedirectResponse("/login?step=code", status_code=303)
+
+
+@app.post("/auth/otp/verify")
+def otp_verify(request: Request, code: str = Form(...)):
+    email = request.session.get("otp_email")
+    if not email:
+        flash(request, "Request a code first.", "error")
+        return RedirectResponse("/login", status_code=303)
+    tries = int(request.session.get("otp_tries", 0)) + 1
+    if tries > 5:
+        request.session.pop("otp_email", None)
+        flash(request, "Too many wrong codes. Please request a new one.", "error")
+        return RedirectResponse("/login", status_code=303)
+    request.session["otp_tries"] = tries
+    try:
+        au = supa.otp_verify(email, code)
+    except supa_auth.AuthError as e:
+        flash(request, str(e), "error")
+        return RedirectResponse("/login?step=code", status_code=303)
+    if au.email != email:
+        flash(request, "That code does not belong to this email address.", "error")
+        return RedirectResponse("/login", status_code=303)
+    if not _login_with_auth_user(request, au):
+        return RedirectResponse("/login", status_code=303)
+    return RedirectResponse("/dashboard", status_code=303)
 
 
 # --------------------------------------------------------------------------- dashboard

@@ -31,6 +31,35 @@ Samples to try: `samples/sample_resume_fresher.txt`, `samples/job_backend_develo
 | Job sources | Remotive, Arbeitnow, RemoteOK (no key needed); Adzuna and JSearch (LinkedIn/Indeed/Glassdoor via licensed API) when keys are set | `portal/providers.py` |
 | Tracker | Saved / applied / interview / offer / closed | `/applications` |
 
+### Saving data in Supabase and signing in with Google / email codes
+
+By default data lives in a local SQLite file. Point the app at a Supabase (Postgres) project and your resumes,
+agents and matches are stored in the cloud and follow your login to any device. Both modes run the same code.
+
+1. **Create a project** at supabase.com (choose a region near your users, e.g. Mumbai). Keep the database
+   password in a password manager.
+2. **Create the tables.** Open *SQL Editor*, paste `supabase/schema.sql` and run it - or run
+   `python -m portal.dbtool init` once `.env` is filled in (step 3). Row-level security is switched on for every
+   table, so the public anon key cannot read your data through Supabase's REST API; only this server can.
+3. **Configure `.env`** (copy `.env.example`; the file is gitignored):
+   - `DATABASE_URL` - *Project Settings > Database > Connection string > Transaction pooler*
+   - `SUPABASE_URL` and `SUPABASE_ANON_KEY` - *Project Settings > API* (the **anon public** key only)
+   - `SITE_URL` - where this app is served, e.g. `http://127.0.0.1:8000`
+4. **Google sign-in.** In Google Cloud Console create an OAuth client (type *Web application*) with the redirect
+   URI `https://<project-ref>.supabase.co/auth/v1/callback`; paste its client ID and secret in
+   *Authentication > Providers > Google*. Under *Authentication > URL Configuration* add
+   `<SITE_URL>/auth/callback` to the redirect URLs.
+5. **Email codes.** Enable *Authentication > Providers > Email*. In *Authentication > Email Templates* make the
+   **Magic Link** and **Confirm signup** templates contain `{{ .Token }}` (that prints the 6-digit code). Supabase's
+   built-in mailer is heavily rate-limited, so add your own SMTP service (Resend, SendGrid, ...) before real use.
+6. **Check it:** `python -m portal.dbtool check` verifies the connection, the tables, row-level security and a
+   write/read/delete round trip. Then `python -m portal.dbtool migrate-sqlite` copies your local data across.
+
+How sign-in works: Google (or the emailed code) proves who you are; the app maps that identity to its own user
+record, so the same login always reaches the same data. A password account with the same verified email is linked
+automatically. Set `ALLOW_PASSWORD_LOGIN=0` to allow only Google / email codes. Tests never read `.env` or touch a
+real database.
+
 ### Job sources and keys
 
 Only official feeds and APIs are used. **LinkedIn, Indeed and Naukri are not scraped** (their terms forbid it).

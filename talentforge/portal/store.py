@@ -79,12 +79,10 @@ _RESUME_MIGRATIONS = (
 
 
 def init() -> None:
-    with db.connect() as c:
-        c.executescript(SCHEMA)
-        have = {row[1] for row in c.execute("PRAGMA table_info(resumes)")}
-        for name, ddl in _RESUME_MIGRATIONS:          # forward-only, idempotent
-            if name not in have:
-                c.execute(f"ALTER TABLE resumes ADD COLUMN {name} {ddl}")
+    db.init_db()                                   # base tables (users, ...) must exist first
+    db.exec_script(SCHEMA)
+    for name, ddl in _RESUME_MIGRATIONS:           # forward-only, idempotent, works on SQLite and Postgres
+        db.add_column_if_missing("resumes", name, ddl)
 
 
 # ----------------------------------------------------------------------------- resumes
@@ -241,14 +239,13 @@ def set_result_status(user_id: int, result_id: int, status: str) -> None:
 
 
 def counts(user_id: int) -> dict:
-    with db.connect() as c:
-        row = c.execute(
-            "SELECT (SELECT COUNT(*) FROM resumes WHERE user_id=?1) AS resumes, "
-            "(SELECT COALESCE(MAX(score),0) FROM resumes WHERE user_id=?1) AS best_score, "
-            "(SELECT COUNT(*) FROM job_agents WHERE user_id=?1 AND active=1) AS agents, "
-            "(SELECT COUNT(*) FROM job_results WHERE user_id=?1 AND status='new') AS new_matches, "
-            "(SELECT COUNT(*) FROM job_results WHERE user_id=?1 AND status IN "
-            "('saved','applied','interview','offer')) AS tracked, "
-            "(SELECT COUNT(*) FROM job_results WHERE user_id=?1 AND status!='dismissed') AS total_matches",
-            (user_id,)).fetchone()
-        return dict(row)
+    row = db.one(
+        "SELECT (SELECT COUNT(*) FROM resumes WHERE user_id=?) AS resumes, "
+        "(SELECT COALESCE(MAX(score),0) FROM resumes WHERE user_id=?) AS best_score, "
+        "(SELECT COUNT(*) FROM job_agents WHERE user_id=? AND active=1) AS agents, "
+        "(SELECT COUNT(*) FROM job_results WHERE user_id=? AND status='new') AS new_matches, "
+        "(SELECT COUNT(*) FROM job_results WHERE user_id=? AND status IN "
+        "('saved','applied','interview','offer')) AS tracked, "
+        "(SELECT COUNT(*) FROM job_results WHERE user_id=? AND status!='dismissed') AS total_matches",
+        (user_id,) * 6)
+    return row or {}

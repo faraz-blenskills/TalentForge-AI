@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "index.py": {
+      "maxDuration": 60,
+      "includeFiles": "{portal/templates/**,portal/static/**}"
+    }
+  },
+  "crons": [{ "path": "/internal/cron/agents", "schedule": "0 3 * * *" }]
+}

@@ -5,3 +5,6 @@ data/
 .pytest_cache/
 .claude/
 .env
+
+.vercel
+.env*

@@ -26,7 +26,13 @@ def main() -> None:
     if args.reset and db.DB_PATH.exists():
         db.DB_PATH.unlink()
         print(f"Deleted {db.DB_PATH}")
+    if db.USE_PG and args.reset:
+        raise SystemExit("--reset only deletes the local SQLite file; it will not touch your cloud database.")
     db.init_db()
+    print("Database:", "Supabase / Postgres (cloud)" if db.USE_PG else f"local SQLite file ({db.DB_PATH.name})")
+    if db.USE_PG and args.demo:
+        print("Note: --demo is ignored on the cloud database so no known-password demo account is created there.")
+        args.demo = False
 
     if args.app == "portal":
         from portal import providers, store
