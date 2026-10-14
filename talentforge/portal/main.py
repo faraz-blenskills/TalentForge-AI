@@ -18,14 +18,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
 from app import db
-from app.parsing import extract_text
 from app.security import hash_password, session_secret, verify_password
 
 from . import agent as agent_mod
-from . import ai, providers, store, tailor
+from . import ai, improve, providers, store, styles, tailor
+from .doc_extract import extract_text
 from .export import resume_to_docx
 from .resume_score import score_resume
-from .resume_struct import empty_resume, from_text, normalize, to_text
+from .resume_struct import empty_resume, normalize, parse_with_report
 
 BASE = Path(__file__).resolve().parent
 ROOT = BASE.parent
@@ -100,13 +100,14 @@ def _own_resume(user: dict, resume_id: int) -> dict:
     return r
 
 
-def _save_resume_data(resume: dict, data: dict, title: str | None = None, template: str | None = None) -> dict:
+def _save_resume_data(resume: dict, data: dict, title: str | None = None, template: str | None = None,
+                      accent: str | None = None) -> dict:
     data = normalize(data)
     prev = resume["score_detail"].get("tailoring") if resume.get("score_detail") else None
     score = score_resume(data)
     if prev:
         score["tailoring"] = prev
-    store.update_resume(resume["id"], data, score, title, template)
+    store.update_resume(resume["id"], data, score, title, template, accent)
     return score
 
 
@@ -193,14 +194,24 @@ def dashboard(request: Request, user: dict = Depends(require_user)):
 
 
 # --------------------------------------------------------------------------- resumes
+ACCENT_PALETTE = [("Ink", "#141413"), ("Navy", "#1f3a5f"), ("Blue", "#2b5fb8"), ("Teal", "#0f766e"),
+                  ("Forest", "#1f5c3f"), ("Orange", "#cf4500"), ("Burgundy", "#8a1c3d"), ("Violet", "#5b3fa0")]
+
+
+def _style_ctx() -> dict:
+    return {"tpls": styles.catalogue(), "palette": ACCENT_PALETTE}
+
+
 @app.get("/resumes", response_class=HTMLResponse)
 def resumes_page(request: Request, user: dict = Depends(require_user)):
-    return render(request, "resumes.html", resumes=store.list_resumes(user["id"]))
+    tid, acc = styles.resolve(None, None)
+    return render(request, "resumes.html", resumes=store.list_resumes(user["id"]), sample=styles.SAMPLE_RESUME,
+                  default_template=tid, default_accent=acc, **_style_ctx())
 
 
 @app.post("/resumes/upload")
 async def resume_upload(request: Request, resume: UploadFile = File(None), pasted: str = Form(""),
-                        user: dict = Depends(require_user)):
+                        template: str = Form(""), accent: str = Form(""), user: dict = Depends(require_user)):
     text, filename = "", ""
     if resume is not None and resume.filename:
         if not resume.filename.lower().endswith((".pdf", ".docx", ".txt")):
@@ -219,35 +230,48 @@ async def resume_upload(request: Request, resume: UploadFile = File(None), paste
     elif pasted.strip():
         text, filename = pasted, "Pasted resume"
     if len(text.strip()) < 40:
-        flash(request, "We could not find enough text in that resume. Paste it as text or try another file.", "error")
+        flash(request, "We could not find enough text in that resume. It may be a scanned image: paste the text "
+                       "instead, or upload a PDF/DOCX that has selectable text.", "error")
         return RedirectResponse("/resumes", status_code=303)
 
-    data = from_text(text, fallback_name=user["name"])
+    tid, acc = styles.resolve(template, accent)
+    data, report = parse_with_report(text, fallback_name=user["name"])
     score = score_resume(data)
     title = Path(filename).stem[:60] if filename else "Uploaded resume"
-    rid = store.create_resume(user["id"], title or "Uploaded resume", data, score, source="upload")
+    rid = store.create_resume(user["id"], title or "Uploaded resume", data, score, source="upload",
+                              template=tid, accent=acc, raw_text=text, parse=report)
     db.audit(user["id"], "resume_uploaded", f"resume:{rid}", filename)
-    flash(request, "Resume uploaded and parsed. Check each section, then tailor it to a job.", "ok")
+    c = report["counts"]
+    flash(request, f"Scanned {c['lines_read']} lines: {c['experience']} experience, {c['projects']} projects, "
+                   f"{c['education']} education, {c['skills']} skills, {c['certifications']} certifications. "
+                   "Review the preview, then follow the improvement plan.", "ok")
     return RedirectResponse(f"/resumes/{rid}", status_code=303)
 
 
 @app.post("/resumes/new")
-def resume_new(request: Request, title: str = Form("My resume"), user: dict = Depends(require_user)):
+def resume_new(request: Request, title: str = Form("My resume"), template: str = Form(""),
+               accent: str = Form(""), user: dict = Depends(require_user)):
+    tid, acc = styles.resolve(template, accent)
     data = empty_resume(user["name"], user["email"])
-    rid = store.create_resume(user["id"], title.strip() or "My resume", data, score_resume(data), source="builder")
+    rid = store.create_resume(user["id"], title.strip() or "My resume", data, score_resume(data), source="builder",
+                              template=tid, accent=acc)
     return RedirectResponse(f"/resumes/{rid}/edit", status_code=303)
 
 
 @app.get("/resumes/{resume_id}", response_class=HTMLResponse)
 def resume_view(resume_id: int, request: Request, user: dict = Depends(require_user)):
     r = _own_resume(user, resume_id)
-    return render(request, "resume_view.html", r=r, d=r["data"], s=r["score_detail"])
+    tid, acc = styles.resolve(r["template"], r["accent"])
+    r["template"], r["accent"] = tid, acc
+    return render(request, "resume_view.html", r=r, d=r["data"], s=r["score_detail"],
+                  plan=improve.build_plan(r["data"]), **_style_ctx())
 
 
 @app.get("/resumes/{resume_id}/edit", response_class=HTMLResponse)
 def resume_edit(resume_id: int, request: Request, user: dict = Depends(require_user)):
     r = _own_resume(user, resume_id)
-    return render(request, "resume_edit.html", r=r, d=r["data"], s=r["score_detail"])
+    r["template"], r["accent"] = styles.resolve(r["template"], r["accent"])
+    return render(request, "resume_edit.html", r=r, d=r["data"], s=r["score_detail"], **_style_ctx())
 
 
 @app.post("/api/resumes/{resume_id}")
@@ -257,8 +281,45 @@ async def resume_save(resume_id: int, request: Request, user: dict = Depends(req
         payload = await request.json()
     except Exception:
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
-    score = _save_resume_data(r, payload.get("data") or {}, payload.get("title"), payload.get("template"))
+    tid, acc = styles.resolve(payload.get("template") or r["template"], payload.get("accent") or r["accent"])
+    score = _save_resume_data(r, payload.get("data") or {}, payload.get("title"), tid, acc)
     return {"score": score["score"], "grade": score["grade"], "checks": score["checks"], "top_fixes": score["top_fixes"]}
+
+
+@app.post("/resumes/{resume_id}/style")
+def resume_style(resume_id: int, request: Request, template: str = Form(""), accent: str = Form(""),
+                 user: dict = Depends(require_user)):
+    r = _own_resume(user, resume_id)
+    tid, acc = styles.resolve(template or r["template"], accent or r["accent"])
+    store.set_style(resume_id, tid, acc)
+    flash(request, f"Template set to {styles.TEMPLATES[tid]['name']}.", "ok")
+    return RedirectResponse(f"/resumes/{resume_id}", status_code=303)
+
+
+@app.get("/resumes/{resume_id}/improve", response_class=HTMLResponse)
+def resume_improve(resume_id: int, request: Request, user: dict = Depends(require_user)):
+    r = _own_resume(user, resume_id)
+    return render(request, "improve.html", r=r, plan=improve.build_plan(r["data"]))
+
+
+@app.post("/resumes/{resume_id}/improve")
+async def resume_improve_apply(resume_id: int, request: Request, user: dict = Depends(require_user)):
+    r = _own_resume(user, resume_id)
+    form = await request.form()
+    plan = improve.build_plan(r["data"])
+    accepted = {str(v) for v in form.getlist("accept")}
+    inputs = {k[len("input_"):]: str(v) for k, v in form.multi_items() if k.startswith("input_")}
+    new_data = improve.apply_plan(r["data"], plan, accepted, inputs)
+    score = score_resume(new_data)
+    if form.get("copy"):
+        rid = store.create_resume(user["id"], f"{r['title']} (improved)"[:120], new_data, score, source=r["source"],
+                                  parent_id=r["id"], template=r["template"], accent=r["accent"])
+    else:
+        rid = r["id"]
+        store.update_resume(rid, new_data, score)
+    db.audit(user["id"], "resume_improved", f"resume:{rid}", f"{plan['score']} -> {score['score']}")
+    flash(request, f"Improvements applied: score {plan['score']:g} -> {score['score']:g}.", "ok")
+    return RedirectResponse(f"/resumes/{rid}/improve", status_code=303)
 
 
 @app.post("/resumes/{resume_id}/default")
@@ -273,7 +334,7 @@ def resume_default(resume_id: int, request: Request, user: dict = Depends(requir
 def resume_duplicate(resume_id: int, request: Request, user: dict = Depends(require_user)):
     r = _own_resume(user, resume_id)
     rid = store.create_resume(user["id"], f"{r['title']} (copy)", r["data"], score_resume(r["data"]),
-                              source=r["source"], parent_id=r["id"], template=r["template"])
+                              source=r["source"], parent_id=r["id"], template=r["template"], accent=r["accent"])
     return RedirectResponse(f"/resumes/{rid}/edit", status_code=303)
 
 
@@ -289,7 +350,7 @@ def resume_delete(resume_id: int, request: Request, user: dict = Depends(require
 def resume_docx(resume_id: int, user: dict = Depends(require_user)):
     r = _own_resume(user, resume_id)
     name = re.sub(r"[^A-Za-z0-9_-]+", "_", r["title"]) or "resume"
-    return Response(resume_to_docx(r["data"]),
+    return Response(resume_to_docx(r["data"], r["template"], r["accent"]),
                     media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     headers={"Content-Disposition": f'attachment; filename="{name}.docx"'})
 
@@ -297,6 +358,7 @@ def resume_docx(resume_id: int, user: dict = Depends(require_user)):
 @app.get("/resumes/{resume_id}/print", response_class=HTMLResponse)
 def resume_print(resume_id: int, request: Request, user: dict = Depends(require_user)):
     r = _own_resume(user, resume_id)
+    r["template"], r["accent"] = styles.resolve(r["template"], r["accent"])
     return render(request, "resume_print.html", r=r, d=r["data"])
 
 
@@ -362,7 +424,8 @@ async def tailor_apply(resume_id: int, request: Request, user: dict = Depends(re
                           "after": after, "applied": applied_titles[:12], "source_resume": r["title"]}
     title = f"{r['title'].split(' - ')[0]} - {tailor.clean_title(job['title'])}"[:120]
     rid = store.create_resume(user["id"], title, new_data, score, source="tailored", parent_id=r["id"],
-                              job_title=job["title"], job_company=job.get("company", ""), template=r["template"])
+                              job_title=job["title"], job_company=job.get("company", ""), template=r["template"],
+                              accent=r["accent"])
     db.audit(user["id"], "resume_tailored", f"resume:{rid}", f"{job['title']} before={before} after={after}")
     flash(request, f"Tailored resume created. Match with this job: {before:g} -> {after:g}.", "ok")
     return RedirectResponse(f"/resumes/{rid}", status_code=303)

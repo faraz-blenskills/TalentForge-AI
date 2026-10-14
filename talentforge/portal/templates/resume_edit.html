@@ -4,16 +4,21 @@
 {% block content %}
 <div class="head">
   <div class="grow"><p class="eyebrow"><a href="/resumes/{{ r.id }}" style="text-decoration:none">&larr; Back to resume</a></p><h1>Resume builder</h1></div>
+  <a class="btn ghost" href="/resumes/{{ r.id }}/improve">Improve score</a>
   <a class="btn ghost" href="/resumes/{{ r.id }}/tailor">Tailor to a job</a>
 </div>
 <div class="grid g-edit">
   <div>
-    <div class="card tight savebar">
-      <input id="rtitle" type="text" value="{{ r.title }}" aria-label="Resume name" style="max-width:260px">
-      <select id="rtemplate" aria-label="Template" style="max-width:150px">
-        <option value="classic" {{ 'selected' if r.template == 'classic' }}>Classic</option>
-        <option value="modern" {{ 'selected' if r.template == 'modern' }}>Modern</option>
+    <div class="card tight savebar" style="flex-wrap:wrap">
+      <input id="rtitle" type="text" value="{{ r.title }}" aria-label="Resume name" style="max-width:240px">
+      <select id="rtemplate" aria-label="Template" style="max-width:190px">
+        {% for t in tpls %}<option value="{{ t.id }}" {{ 'selected' if r.template == t.id }}>{{ t.name }} ({{ t.font }})</option>{% endfor %}
       </select>
+      <span class="swatches" style="margin:0" role="radiogroup" aria-label="Accent colour">
+        {% for n, hex in palette %}
+        <label class="swatch" title="{{ n }}"><input type="radio" name="accent" value="{{ hex }}" {{ 'checked' if hex == r.accent }}><i style="background: {{ hex }}"></i></label>
+        {% endfor %}
+      </span>
       <span id="savestate" class="muted small grow">All changes saved</span>
       <button id="savebtn" class="btn sm" type="button">Save</button>
     </div>
@@ -31,6 +36,6 @@
   </div>
 </div>
 <script id="resume-data" type="application/json">{{ d|tojson }}</script>
-<script id="resume-meta" type="application/json">{{ {'id': r.id, 'score': r.score, 'fixes': s.top_fixes, 'grade': s.grade}|tojson }}</script>
+<script id="resume-meta" type="application/json">{{ {'id': r.id, 'score': r.score, 'fixes': s.top_fixes, 'grade': s.grade, 'accent': r.accent}|tojson }}</script>
 {% endblock %}
 {% block scripts %}<script src="/static/builder.js"></script>{% endblock %}

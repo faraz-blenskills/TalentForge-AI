@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% import "_ui.html" as ui %}
+{% block title %}Improve score - TalentForge AI{% endblock %}
+{% block content %}
+<div class="head">
+  <div class="grow"><p class="eyebrow"><a href="/resumes/{{ r.id }}" style="text-decoration:none">&larr; {{ r.title }}</a></p>
+    <h1>Your path to {{ plan.target }}%</h1>
+    <p class="muted">Every item below was measured by re-scoring your resume with that change applied. Nothing is added unless it is already true of you.</p></div>
+</div>
+
+<div class="grid g-main">
+  <form method="post" action="/resumes/{{ r.id }}/improve">
+    {% set groups = [('auto', 'Quick wins we can apply for you', 'Factual rewrites using only what your resume already says.'),
+                     ('input', 'Needs one fact from you', 'Fill in what you know. Empty fields are skipped.'),
+                     ('manual', 'Needs real content (use the builder)', 'We cannot invent this for you, but here is what it is worth.')] %}
+    {% for kind, title, sub in groups %}
+      {% set group = plan['items']|selectattr('kind', 'equalto', kind)|list %}
+      {% if group %}
+      <div class="card" style="margin-bottom:18px">
+        <h3>{{ title }}</h3><p class="muted small">{{ sub }}</p>
+        {% for it in group %}
+        <div class="plan-item">
+          <div class="gain">{% if it.gain > 0 %}<b>+{{ '%g'|format(it.gain) }}</b><span class="tiny muted">points</span>
+            {% else %}<span class="tag brand">ATS keywords</span>{% endif %}</div>
+          <div class="grow">
+            {% if kind == 'auto' %}
+              <label class="check" style="margin:0"><input type="checkbox" name="accept" value="{{ it.id }}" checked>
+                <span><b>{{ it.title }}</b><br><span class="muted small">{{ it.detail }}</span></span></label>
+              {% for ch in it.changes[:4] %}{% if ch.before %}
+                <div class="change"><div class="was">{{ ch.before }}</div><div class="now">{{ ch.after }}</div></div>
+              {% endif %}{% endfor %}
+              {% if it.changes|length > 4 and it.changes[0].before %}<div class="tiny muted">+ {{ it.changes|length - 4 }} more</div>{% endif %}
+            {% elif kind == 'input' %}
+              <b>{{ it.title }}</b><br><span class="muted small">{{ it.detail }}</span>
+              {% for f in it.fields %}
+                <label for="f_{{ loop.index }}_{{ it.id|replace(':','_') }}" class="small">{{ f.label }}</label>
+                {% if f.textarea %}
+                  <textarea id="f_{{ loop.index }}_{{ it.id|replace(':','_') }}" name="input_{{ f.id }}" rows="4">{{ f.value }}</textarea>
+                {% else %}
+                  <input id="f_{{ loop.index }}_{{ it.id|replace(':','_') }}" type="text" name="input_{{ f.id }}" value="{{ f.value }}" placeholder="{{ f.placeholder }}">
+                {% endif %}
+              {% endfor %}
+              <input type="hidden" name="accept" value="{{ it.id }}">
+            {% else %}
+              <b>{{ it.title }}</b><br><span class="muted small">{{ it.detail }}</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endfor %}
+
+    {% if not plan['items'] %}
+      <div class="card"><h3>Nothing left to fix</h3><p class="muted">This resume already scores {{ '%g'|format(plan.score) }}. Tailor it to a specific job to raise its match.</p>
+        <a class="btn" href="/resumes/{{ r.id }}/tailor">Tailor to a job</a></div>
+    {% else %}
+      <div class="card tight">
+        <label class="check" style="margin:0 0 12px"><input type="checkbox" name="copy" value="1" checked>
+          <span>Save the result as a new copy and keep the original untouched</span></label>
+        <button class="btn" type="submit">Apply improvements</button>
+        <a class="btn ghost" href="/resumes/{{ r.id }}/edit">Edit manually in the builder</a>
+      </div>
+    {% endif %}
+  </form>
+
+  <div class="stack">
+    <div class="card dark">
+      <p class="eyebrow" style="color:rgba(243,240,238,.7)">Score projection</p>
+      <div class="row" style="gap:18px;margin:10px 0">
+        {{ ui.ring(plan.score, 'sm') }}<span style="font-size:1.6rem">&rarr;</span>{{ ui.ring(plan.projected_all, 'sm') }}
+      </div>
+      <p class="small" style="margin:0">Now <b>{{ '%g'|format(plan.score) }}</b> &middot; quick wins only <b>{{ '%g'|format(plan.projected_auto) }}</b>
+        &middot; with every change <b>{{ '%g'|format(plan.projected_all) }}</b></p>
+      <p class="tiny muted" style="margin-top:8px">The score is our ATS-readiness heuristic, not a promise of interviews.</p>
+    </div>
+    <div class="card"><h3>Score by check</h3>{{ ui.score_checks({'checks': plan.checks}) }}</div>
+  </div>
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@
   "use strict";
   var data = JSON.parse(document.getElementById("resume-data").textContent);
   var meta = JSON.parse(document.getElementById("resume-meta").textContent);
+  data.extras = data.extras || [];
   var builder = document.getElementById("builder");
   var preview = document.getElementById("preview");
   var stateEl = document.getElementById("savestate");
@@ -12,6 +13,10 @@
   var saveTimer = null;
   var dirty = false;
 
+  function accent() {
+    var r = document.querySelector('input[name="accent"]:checked');
+    return r ? r.value : (meta.accent || "#2b5fb8");
+  }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -24,22 +29,24 @@
   function field(label, value, onInput, opts) {
     opts = opts || {};
     var wrap = document.createElement("div");
-    var lab = document.createElement("label");
-    lab.textContent = label;
+    if (label) {
+      var lab = document.createElement("label");
+      lab.textContent = label;
+      wrap.appendChild(lab);
+    }
     var el = document.createElement(opts.multiline ? "textarea" : "input");
     if (!opts.multiline) el.type = "text";
     if (opts.rows) el.rows = opts.rows;
     if (opts.placeholder) el.placeholder = opts.placeholder;
     el.value = value || "";
     el.addEventListener("input", function () { onInput(el.value); changed(); });
-    wrap.appendChild(lab);
     wrap.appendChild(el);
     if (opts.hint) { var h = document.createElement("div"); h.className = "hint"; h.textContent = opts.hint; wrap.appendChild(h); }
     return wrap;
   }
-  function grid(children, cols) {
+  function grid(children) {
     var g = document.createElement("div");
-    g.className = "grid " + (cols === 3 ? "g3" : "g2");
+    g.className = "grid g2";
     g.style.gap = "0 14px";
     children.forEach(function (c) { g.appendChild(c); });
     return g;
@@ -55,7 +62,6 @@
     h.appendChild(t);
     c.appendChild(h);
     if (hint) { var p = document.createElement("div"); p.className = "hint"; p.textContent = hint; c.appendChild(p); }
-    c._head = h;
     return c;
   }
   function addBtn(label, fn) {
@@ -126,12 +132,12 @@
     }));
     builder.appendChild(c);
 
-    c = card("Projects", "Especially important if you are early in your career.");
+    c = card("Projects", "Three projects with two bullets each earn full credit when you have little experience.");
     data.projects.forEach(function (p, i) {
       var it = itemShell("Project " + (i + 1), function () { data.projects.splice(i, 1); });
       it.appendChild(grid([
         field("Name", p.name, function (v) { p.name = v; }),
-        field("One-line description", p.description, function (v) { p.description = v; })
+        field("Tech stack / one-line description", p.description, function (v) { p.description = v; })
       ]));
       it.appendChild(field("Bullets (one per line)", p.bullets.join("\n"), function (v) { p.bullets = lines(v); },
         { multiline: true, rows: 3 }));
@@ -146,8 +152,8 @@
       it.appendChild(grid([
         field("Degree", e.degree, function (v) { e.degree = v; }, { placeholder: "B.Tech in Computer Science" }),
         field("Institution", e.institution, function (v) { e.institution = v; }),
-        field("Year", e.year, function (v) { e.year = v; }, { placeholder: "2026" }),
-        field("Details", e.details, function (v) { e.details = v; })
+        field("Year / dates", e.year, function (v) { e.year = v; }, { placeholder: "2026" }),
+        field("Details (grade, honours)", e.details, function (v) { e.details = v; })
       ]));
       c.appendChild(it);
     });
@@ -158,21 +164,34 @@
 
     c = card("Certifications");
     c.appendChild(field("One per line", data.certifications.join("\n"), function (v) { data.certifications = lines(v); },
-      { multiline: true, rows: 3 }));
+      { multiline: true, rows: 4 }));
+    builder.appendChild(c);
+
+    c = card("Additional sections", "Achievements, languages, activities - anything else from your resume.");
+    data.extras.forEach(function (ex, i) {
+      var it = itemShell(ex.title || "Section " + (i + 1), function () { data.extras.splice(i, 1); });
+      it.appendChild(field("Section title", ex.title, function (v) { ex.title = v; }));
+      it.appendChild(field("Items (one per line)", (ex.items || []).join("\n"), function (v) { ex.items = lines(v); },
+        { multiline: true, rows: 3 }));
+      c.appendChild(it);
+    });
+    c.appendChild(addBtn("+ Add section", function () { data.extras.push({ title: "Achievements", items: [] }); }));
     builder.appendChild(c);
   }
 
   /* ---------- preview ---------- */
+  function bullets(a) {
+    return a.length ? "<ul>" + a.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" : "";
+  }
   function renderPreview() {
     var b = data.basics, h = "";
     var contact = [b.email, b.phone, b.location].concat(b.links || []).filter(Boolean).map(esc).join("&nbsp;&nbsp;|&nbsp;&nbsp;");
-    h += '<div class="paper ' + esc(tplEl.value) + '">';
-    h += '<h1 class="name">' + (b.name ? esc(b.name) : '<span class="empty">Your name</span>') + "</h1>";
+    h += '<div class="paper t-' + esc(tplEl.value) + '" style="--rc:' + esc(accent()) + '">';
+    h += '<div class="hdr"><h1 class="name">' + (b.name ? esc(b.name) : '<span class="empty">Your name</span>') + "</h1>";
     if (b.headline) h += '<div class="headline">' + esc(b.headline) + "</div>";
-    h += '<div class="contact">' + contact + "</div>";
+    h += '<div class="contact">' + contact + "</div></div>";
     if (data.summary) h += '<h2 class="sec">Summary</h2><div>' + esc(data.summary) + "</div>";
     if (data.skills.length) h += '<h2 class="sec">Skills</h2><div>' + data.skills.map(esc).join(", ") + "</div>";
-    function bullets(a) { return a.length ? "<ul>" + a.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" : ""; }
     if (data.experience.length) {
       h += '<h2 class="sec">Experience</h2>';
       data.experience.forEach(function (e) {
@@ -196,6 +215,9 @@
       });
     }
     if (data.certifications.length) h += '<h2 class="sec">Certifications</h2>' + bullets(data.certifications);
+    data.extras.forEach(function (ex) {
+      if (ex.items && ex.items.length) h += '<h2 class="sec">' + esc(ex.title) + "</h2>" + bullets(ex.items);
+    });
     h += "</div>";
     preview.innerHTML = h;
   }
@@ -219,7 +241,7 @@
     fetch("/api/resumes/" + meta.id, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: data, title: titleEl.value, template: tplEl.value })
+      body: JSON.stringify({ data: data, title: titleEl.value, template: tplEl.value, accent: accent() })
     }).then(function (r) {
       if (!r.ok) throw new Error("save failed");
       return r.json();
@@ -242,6 +264,7 @@
 
   titleEl.addEventListener("input", changed);
   tplEl.addEventListener("change", changed);
+  document.querySelectorAll('input[name="accent"]').forEach(function (r) { r.addEventListener("change", changed); });
   document.getElementById("savebtn").addEventListener("click", function () { clearTimeout(saveTimer); save(); });
   window.addEventListener("beforeunload", function (e) { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
 

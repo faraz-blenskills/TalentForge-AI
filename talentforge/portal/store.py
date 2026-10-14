@@ -71,9 +71,20 @@ CREATE TABLE IF NOT EXISTS job_results (
 """
 
 
+_RESUME_MIGRATIONS = (
+    ("accent", "TEXT NOT NULL DEFAULT ''"),
+    ("raw_text", "TEXT NOT NULL DEFAULT ''"),
+    ("parse_json", "TEXT NOT NULL DEFAULT '{}'"),
+)
+
+
 def init() -> None:
     with db.connect() as c:
         c.executescript(SCHEMA)
+        have = {row[1] for row in c.execute("PRAGMA table_info(resumes)")}
+        for name, ddl in _RESUME_MIGRATIONS:          # forward-only, idempotent
+            if name not in have:
+                c.execute(f"ALTER TABLE resumes ADD COLUMN {name} {ddl}")
 
 
 # ----------------------------------------------------------------------------- resumes
@@ -82,6 +93,7 @@ def _resume(r: dict | None) -> dict | None:
         return None
     r["data"] = json.loads(r["data_json"])
     r["score_detail"] = json.loads(r["score_json"] or "{}")
+    r["parse"] = json.loads(r.get("parse_json") or "{}")
     return r
 
 
@@ -100,21 +112,30 @@ def default_resume(user_id: int) -> dict | None:
 
 
 def create_resume(user_id: int, title: str, data: dict, score: dict, source: str, parent_id: int | None = None,
-                  job_title: str = "", job_company: str = "", template: str = "classic") -> int:
+                  job_title: str = "", job_company: str = "", template: str = "modern", accent: str = "",
+                  raw_text: str = "", parse: dict | None = None) -> int:
     first = not db.one("SELECT 1 AS x FROM resumes WHERE user_id=?", (user_id,))
     now = db.now()
     return db.run(
         "INSERT INTO resumes(user_id, title, source, is_default, parent_id, job_title, job_company, template, "
-        "data_json, score, score_json, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "accent, raw_text, parse_json, data_json, score, score_json, created_at, updated_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (user_id, title[:120], source, 1 if first else 0, parent_id, job_title[:200], job_company[:200], template,
-         json.dumps(data), score["score"], json.dumps(score), now, now))
+         accent, raw_text[:60000], json.dumps(parse or {}), json.dumps(data), score["score"], json.dumps(score),
+         now, now))
 
 
-def update_resume(resume_id: int, data: dict, score: dict, title: str | None = None, template: str | None = None) -> None:
-    cur = db.one("SELECT title, template FROM resumes WHERE id=?", (resume_id,))
-    db.run("UPDATE resumes SET data_json=?, score=?, score_json=?, title=?, template=?, updated_at=? WHERE id=?",
+def update_resume(resume_id: int, data: dict, score: dict, title: str | None = None, template: str | None = None,
+                  accent: str | None = None) -> None:
+    cur = db.one("SELECT title, template, accent FROM resumes WHERE id=?", (resume_id,))
+    db.run("UPDATE resumes SET data_json=?, score=?, score_json=?, title=?, template=?, accent=?, updated_at=? "
+           "WHERE id=?",
            (json.dumps(data), score["score"], json.dumps(score), (title or cur["title"])[:120],
-            template or cur["template"], db.now(), resume_id))
+            template or cur["template"], accent if accent is not None else cur["accent"], db.now(), resume_id))
+
+
+def set_style(resume_id: int, template: str, accent: str) -> None:
+    db.run("UPDATE resumes SET template=?, accent=?, updated_at=? WHERE id=?", (template, accent, db.now(), resume_id))
 
 
 def set_default(user_id: int, resume_id: int) -> None:

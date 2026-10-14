@@ -98,10 +98,15 @@ def score_resume(r: dict) -> dict:
             c["fixes"].append("Add start and end dates to every role.")
     proj_pts = 0.0
     if proj:
-        proj_pts = 6 * min(len(proj), 3) / 3 + 8 * (sum(1 for p in proj if p["bullets"] or p["description"]) / len(proj))
-        if len(proj) < 2:
-            c["fixes"].append("Add at least two projects that show applied skills.")
-    c["points"] = round(min(max(exp_pts, proj_pts, (exp_pts + proj_pts) * 0.8), 20), 1)
+        # up to 8 for having three projects and up to 12 for each one carrying at least two bullets
+        depth = sum(min(len(p["bullets"]), 2) / 2 for p in proj) / len(proj)
+        proj_pts = 8 * min(len(proj), 3) / 3 + 12 * depth
+        if len(proj) < 3:
+            c["fixes"].append(f"Add {3 - len(proj)} more project{'s' if 3 - len(proj) > 1 else ''} that show "
+                              "applied skills (three or more earns full credit).")
+        if depth < 1:
+            c["fixes"].append("Give every project at least two bullets: what you built and the result.")
+    c["points"] = round(min(max(exp_pts, proj_pts, exp_pts * 0.7 + proj_pts * 0.6), 20), 1)
     c["findings"].append(f"{len(exp)} role(s) and {len(proj)} project(s) found.")
     if not exp and not proj:
         c["fixes"].append("Add work experience, internships or projects - recruiters need evidence of what you built.")

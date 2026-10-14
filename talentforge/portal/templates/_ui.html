@@ -2,12 +2,14 @@
 <div class="ring {{ size }} {{ score|score_class }}" style="--p: {{ score }}"><span>{{ '%d'|format(score) }}</span></div>
 {%- endmacro %}
 
-{% macro paper(d, template='classic') -%}
+{% macro paper(d, template='modern', accent='') -%}
 {% set b = d.basics %}
-<div class="paper {{ template }}">
-  <h1 class="name">{% if b.name %}{{ b.name }}{% else %}<span class="empty">Your name</span>{% endif %}</h1>
-  {% if b.headline %}<div class="headline">{{ b.headline }}</div>{% endif %}
-  <div class="contact">{{ ([b.email, b.phone, b.location] + b.links)|select|join('  |  ') }}</div>
+<div class="paper t-{{ template }}" style="--rc: {{ accent or '#2b5fb8' }}">
+  <div class="hdr">
+    <h1 class="name">{% if b.name %}{{ b.name }}{% else %}<span class="empty">Your name</span>{% endif %}</h1>
+    {% if b.headline %}<div class="headline">{{ b.headline }}</div>{% endif %}
+    <div class="contact">{{ ([b.email, b.phone, b.location] + b.links)|select|join('  |  ') }}</div>
+  </div>
   {% if d.summary %}<h2 class="sec">Summary</h2><div>{{ d.summary }}</div>{% endif %}
   {% if d.skills %}<h2 class="sec">Skills</h2><div>{{ d.skills|join(', ') }}</div>{% endif %}
   {% if d.experience %}<h2 class="sec">Experience</h2>
@@ -25,6 +27,30 @@
     {% for e in d.education %}<div class="entry"><div class="t"><span>{{ [e.degree, e.institution]|select|join(' | ') }}</span><span class="d">{{ e.year }}</span></div>
       {% if e.details %}<div class="sub">{{ e.details }}</div>{% endif %}</div>{% endfor %}{% endif %}
   {% if d.certifications %}<h2 class="sec">Certifications</h2><ul>{% for c in d.certifications %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+  {% for ex in d.extras %}{% if ex.items %}<h2 class="sec">{{ ex.title }}</h2><ul>{% for t in ex['items'] %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro template_picker(templates, selected, accent, d, palette) -%}
+<div class="tpl-picker" data-accent="{{ accent }}">
+  <div class="tpl-grid">
+    {% for t in templates %}
+    <label class="tpl-card {{ 'on' if t.id == selected }}">
+      <input type="radio" name="template" value="{{ t.id }}" {{ 'checked' if t.id == selected }}>
+      <div class="thumb">{{ paper(d, t.id, accent) }}</div>
+      <div class="tpl-meta"><b>{{ t.name }}</b> <span class="tag">{{ t.font }}</span>
+        <div class="muted tiny">{{ t.tagline }}</div></div>
+    </label>
+    {% endfor %}
+  </div>
+  <div class="swatches" role="radiogroup" aria-label="Accent colour">
+    <span class="muted small">Colour</span>
+    {% for n, hex in palette %}
+    <label class="swatch" title="{{ n }}"><input type="radio" name="accent" value="{{ hex }}" {{ 'checked' if hex == accent }}>
+      <i style="background: {{ hex }}"></i></label>
+    {% endfor %}
+  </div>
+  <div class="hint">All templates are single-column with standard fonts and headings, so applicant tracking systems read them correctly.</div>
 </div>
 {%- endmacro %}
 

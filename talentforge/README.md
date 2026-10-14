@@ -21,7 +21,10 @@ Samples to try: `samples/sample_resume_fresher.txt`, `samples/job_backend_develo
 | Area | What it does | Code |
 |---|---|---|
 | Sign in / register | Candidate accounts, consent, delete-all-data | `portal/main.py` |
-| Resumes | Upload PDF/DOCX/TXT -> structured resume; or build from scratch with live preview and autosave; several resumes per user; DOCX export and print-to-PDF | `portal/resume_struct.py`, `portal/static/builder.js`, `portal/export.py` |
+| Resume upload | Reads the **whole** document (every page, DOCX tables/headers/text boxes, two-column PDFs, symbol-font bullets), recognises headings in many spellings, and keeps anything it cannot classify as an extra section so nothing is dropped. Shows what it read (counts, sections, original text) next to the preview | `portal/doc_extract.py`, `portal/resume_parser.py` |
+| Resume builder | Build from scratch with live preview and autosave; several resumes per user; DOCX export and print-to-PDF | `portal/static/builder.js`, `portal/export.py` |
+| Templates | Three ATS-friendly single-column templates: **Classic** (Georgia, centred, ruled headings), **Modern** (Calibri, accent bars), **Executive** (Arial, letter-spaced headings, strong top rule); 8 accent colours; chosen at creation and changeable any time; DOCX export follows the template | `portal/styles.py`, `portal/static/portal.css` |
+| Improve score | A measured plan towards 99: quick wins we can apply, items needing one fact from you, and manual work, each with its real point gain (found by re-scoring). Apply as a new copy or in place | `portal/improve.py` |
 | Resume score | 7 explained checks (contact, summary, experience, impact wording, skills, education, hygiene) with concrete fixes | `portal/resume_score.py` |
 | Tailoring | Paste a posting (or pick one an agent found) -> keyword gap, role-specific summary, stronger bullet openers, skill order, optional metric prompts. Accepted changes create a **new copy**; shows match before/after | `portal/tailor.py` |
 | Job agents | Plans queries, searches several sources in parallel, de-duplicates (within a run and across runs), filters by level/location/work mode, drops unrelated roles, scores against your resume, keeps a step-by-step activity log, runs on a schedule or on demand | `portal/agent.py` |

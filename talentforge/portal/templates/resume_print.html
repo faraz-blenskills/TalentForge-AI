@@ -4,5 +4,5 @@
 {% block content %}
 <div class="noprint row" style="margin-bottom:16px"><button class="btn" onclick="window.print()">Print or save as PDF</button>
   <a class="btn ghost" href="/resumes/{{ r.id }}">Back</a></div>
-{{ ui.paper(d, r.template) }}
+{{ ui.paper(d, r.template, r.accent) }}
 {% endblock %}
