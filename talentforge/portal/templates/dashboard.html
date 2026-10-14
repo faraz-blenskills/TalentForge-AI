@@ -2,7 +2,10 @@
 {% import "_ui.html" as ui %}
 {% block title %}Home - TalentForge AI{% endblock %}
 {% block content %}
-<div class="head"><div class="grow"><p class="eyebrow">Home</p><h1>{{ greeting }}, {{ user.name.split(' ')[0] }}</h1></div>
+<div class="head"><div class="grow"><p class="eyebrow">Home</p><h1><span id="greet">{{ greeting }}</span>, {{ user.name.split(' ')[0] }}</h1>
+<script>/* the server runs in UTC; greet by the visitor's own clock */
+(function(){var h=new Date().getHours(),e=document.getElementById('greet');
+if(e)e.textContent=h<12?'Good morning':h<17?'Good afternoon':'Good evening';})();</script></div>
   <a class="btn" href="/resumes">Manage resumes</a></div>
 
 <div class="grid g4">
