@@ -4,7 +4,7 @@
 <section class="hero">
   <div>
     <p class="eyebrow">AI career portal for candidates</p>
-    <h1>A resume that fits <em>every</em> job you apply for.</h1>
+    <h1><em>TalentForge AI:</em> An Agentic AI-Powered Autonomous Hiring Intelligence Platform</h1>
     <p class="lead">Upload or build your resume, see exactly why it scores what it does, tailor it to any posting in minutes, and let a job agent search for roles that match you.</p>
     <div class="row" style="margin-top:22px">
       {% if user %}<a class="btn" href="/dashboard">Go to your dashboard</a>
@@ -13,15 +13,32 @@
     </div>
     <p class="hint">No auto-applying. No invented experience. You approve every change.</p>
   </div>
-  <div class="card dark">
-    <p class="eyebrow" style="color:rgba(243,240,238,.7)">Resume score</p>
-    <div class="row" style="gap:22px;margin:10px 0 16px">
-      {{ ui.ring(86) }}
-      <div><h3 style="margin:0">Excellent</h3><p class="muted small">7 checks, every point explained</p></div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="ha-stage">
+      <div class="ha-card ha-resume">
+        <div class="ha-top">
+          <div class="ha-avatar">AK</div>
+          <div class="ha-id"><b>Aarav Kulkarni</b><span>Backend Developer</span></div>
+          <div class="ha-ring">
+            <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" class="trk"/><circle cx="22" cy="22" r="18" class="val"/></svg>
+            <span>86</span>
+          </div>
+        </div>
+        <div class="ha-lines"><i style="width:92%"></i><i style="width:78%"></i><i style="width:85%"></i><i style="width:58%"></i></div>
+        <div class="ha-tags"><span>Python</span><span>FastAPI</span><span>PostgreSQL</span><span>Docker</span></div>
+        <div class="ha-foot"><span class="dot"></span>ATS check &middot; 7 of 7 passed</div>
+      </div>
+
+      <div class="ha-card ha-agent">
+        <div class="ha-agent-head"><b>Job agent</b><span class="live"><span class="dot"></span>Searching 4 sources</span></div>
+        <div class="ha-job" style="--d:.2s"><div><b>Backend Engineer</b><span>Remote &middot; Remotive</span></div><div class="m"><em style="--w:92%"></em><strong>92%</strong></div></div>
+        <div class="ha-job" style="--d:.5s"><div><b>Python Developer</b><span>Pune &middot; Adzuna</span></div><div class="m"><em style="--w:84%"></em><strong>84%</strong></div></div>
+        <div class="ha-job" style="--d:.8s"><div><b>API Engineer</b><span>Remote &middot; Arbeitnow</span></div><div class="m"><em style="--w:77%"></em><strong>77%</strong></div></div>
+      </div>
+
+      <div class="ha-chip"><span class="up">+23</span> tailored to job description</div>
     </div>
-    <div class="bar"><i style="width:86%"></i></div>
-    <p class="small" style="margin-top:14px">Quantify results in 2 more bullets &rarr; +4 points</p>
-    <p class="small muted">Match with "Backend Developer" rose 58 &rarr; 81 after tailoring.</p>
+    <p class="ha-note">Illustrative preview</p>
   </div>
 </section>
 
