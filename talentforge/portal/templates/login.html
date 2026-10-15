@@ -46,10 +46,28 @@
 
     {% if supa_on %}<p class="hint" style="margin-top:14px">By continuing you agree that your resume and profile data are processed to score resumes and match jobs, and that you can delete all your data any time.</p>{% endif %}
   </div>
-  <div class="card dark" style="display:flex;flex-direction:column;justify-content:flex-end;min-height:360px">
-    <p class="eyebrow" style="color:rgba(243,240,238,.7)">What's inside</p>
-    <h2>Resume score. Tailoring. Job agents.</h2>
-    <p class="muted">Your resumes and job matches are saved to your account, so you can pick up on any device.</p>
+  <div class="hero-art login-art" aria-hidden="true">
+    <div class="ha-stage">
+      <div class="ha-chip"><span class="up">&#10003;</span> Secure sign-in</div>
+      <div class="ha-card sa">
+        <div class="sa-head">
+          <span class="sa-lock"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+          <div><b>Sign in</b><span>Encrypted session</span></div>
+        </div>
+        <div class="sa-field"><label>Email</label><div class="sa-input"><span class="sa-type">aarav.kulkarni@example.com</span></div></div>
+        <div class="sa-field"><label>Password</label><div class="sa-input"><span class="sa-dots">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span></div></div>
+        <div class="sa-btn">
+          <span class="l1">Sign in</span>
+          <span class="l2"><i class="spin"></i>Verifying</span>
+          <span class="l3"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Signed in</span>
+        </div>
+        <div class="sa-done">
+          <div class="sa-welcome"><b>Welcome back, Aarav</b><span>Your workspace is ready</span></div>
+          <div class="sa-chips"><span>3 resumes</span><span>ATS 86</span><span>12 new matches</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="ha-note">Illustrative preview</p>
   </div>
 </div>
 {% endblock %}
